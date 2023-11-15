@@ -27,8 +27,6 @@ github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaS
 github.com/google/go-cmp v0.5.5 h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
-github.com/hexcraft-biz/envmod-dogmas v0.0.1 h1:QzqngWhOG49DAi7P0TU7ChgoV9IkrPQXBPuMsLsGTiE=
-github.com/hexcraft-biz/envmod-dogmas v0.0.1/go.mod h1:G4hx98rdsSBDJwskOrKABjoKAL+raR5NGCGvIZ0NDV8=
 github.com/hexcraft-biz/her v0.0.5 h1:HWmLtFxnKp9YVNQJiCnVGGG8yUdurFEjveYILGys9WY=
 github.com/hexcraft-biz/her v0.0.5/go.mod h1:g7jcBefsWaWBmhFzfeO0m8GsnrJQOEkFHS/SeiMTM+Y=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
