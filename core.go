@@ -56,7 +56,7 @@ func (f *Feature) DELETE(relativePath, identifier, description string, handlers 
 // ================================================================
 type Scope struct {
 	*Dogmas     `json:"-"`
-	Identifier  string `json:"scope"`
+	Identifier  string `json:"identifier"`
 	Description string `json:"description"`
 }
 
