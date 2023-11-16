@@ -84,6 +84,7 @@ type ScopeAuthorizationRule struct {
 
 type UserPermissions struct {
 	Scope         *string  `json:"scope"`
+	Action        string   `json:"action"`
 	AffectedScope []string `json:"affectedScopes"`
 }
 
@@ -102,9 +103,22 @@ func (s *Scope) CanRevokeUserAccess(affectedScope string) *Scope {
 	return s
 }
 
-func (s Scope) SetUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
+func (s Scope) AssignUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
+	return s.setUserPermissions(userId, "ASSIGN", scopes)
+}
+
+func (s Scope) GrantUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
+	return s.setUserPermissions(userId, "GRANT", scopes)
+}
+
+func (s Scope) RevokeUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
+	return s.setUserPermissions(userId, "REVOKE", scopes)
+}
+
+func (s Scope) setUserPermissions(userId xuuid.UUID, action string, scopes []string) her.Error {
 	jsonbytes, err := json.Marshal(&UserPermissions{
 		Scope:         &s.Identifier,
+		Action:        action,
 		AffectedScope: scopes,
 	})
 	if err != nil {
