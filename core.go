@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hexcraft-biz/her"
+	"github.com/hexcraft-biz/xuuid"
 )
 
 // ================================================================
@@ -26,29 +27,44 @@ func New(e *gin.Engine, startsWith string, d *Dogmas) *Feature {
 	}
 }
 
-func (f *Feature) GET(relativePath, identifier, description string, handlers ...gin.HandlerFunc) *Scope {
-	f.RouterGroup.GET(relativePath, handlers...)
-	return f.Dogmas.addScope(identifier, description)
+type HandlerFunc func(*Scope) gin.HandlerFunc
+
+func handlerFuncs(s *Scope, handlers []HandlerFunc) []gin.HandlerFunc {
+	funcs := make([]gin.HandlerFunc, len(handlers))
+	for i, h := range handlers {
+		funcs[i] = h(s)
+	}
+	return funcs
 }
 
-func (f *Feature) POST(relativePath, identifier, description string, handlers ...gin.HandlerFunc) *Scope {
-	f.RouterGroup.POST(relativePath, handlers...)
-	return f.Dogmas.addScope(identifier, description)
+func (f *Feature) GET(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
+	s := f.Dogmas.addScope(identifier, description)
+	f.RouterGroup.GET(relativePath, handlerFuncs(s, handlers)...)
+	return s
 }
 
-func (f *Feature) PUT(relativePath, identifier, description string, handlers ...gin.HandlerFunc) *Scope {
-	f.RouterGroup.PUT(relativePath, handlers...)
-	return f.Dogmas.addScope(identifier, description)
+func (f *Feature) POST(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
+	s := f.Dogmas.addScope(identifier, description)
+	f.RouterGroup.POST(relativePath, handlerFuncs(s, handlers)...)
+	return s
 }
 
-func (f *Feature) PATCH(relativePath, identifier, description string, handlers ...gin.HandlerFunc) *Scope {
-	f.RouterGroup.PATCH(relativePath, handlers...)
-	return f.Dogmas.addScope(identifier, description)
+func (f *Feature) PUT(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
+	s := f.Dogmas.addScope(identifier, description)
+	f.RouterGroup.PUT(relativePath, handlerFuncs(s, handlers)...)
+	return s
 }
 
-func (f *Feature) DELETE(relativePath, identifier, description string, handlers ...gin.HandlerFunc) *Scope {
-	f.RouterGroup.DELETE(relativePath, handlers...)
-	return f.Dogmas.addScope(identifier, description)
+func (f *Feature) PATCH(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
+	s := f.Dogmas.addScope(identifier, description)
+	f.RouterGroup.PATCH(relativePath, handlerFuncs(s, handlers)...)
+	return s
+}
+
+func (f *Feature) DELETE(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
+	s := f.Dogmas.addScope(identifier, description)
+	f.RouterGroup.DELETE(relativePath, handlerFuncs(s, handlers)...)
+	return s
 }
 
 // ================================================================
@@ -66,6 +82,11 @@ type ScopeAuthorizationRule struct {
 	AffectedScope string  `json:"affectedScope"`
 }
 
+type UserPermissions struct {
+	Scope         *string  `json:"scope"`
+	AffectedScope []string `json:"affectedScopes"`
+}
+
 func (s *Scope) CanAssignUserAccess(affectedScope string) *Scope {
 	s.Dogmas.addAssignScopeAuthorizationRule(s, affectedScope)
 	return s
@@ -79,6 +100,18 @@ func (s *Scope) CanGrantUserAccess(affectedScope string) *Scope {
 func (s *Scope) CanRevokeUserAccess(affectedScope string) *Scope {
 	s.Dogmas.addRevokeScopeAuthorizationRule(s, affectedScope)
 	return s
+}
+
+func (s Scope) SetUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
+	jsonbytes, err := json.Marshal(&UserPermissions{
+		Scope:         &s.Identifier,
+		AffectedScope: scopes,
+	})
+	if err != nil {
+		return her.NewError(http.StatusInternalServerError, err, nil)
+	}
+
+	return apiPost(s.Dogmas.Endpoint.JoinPath("/permissions/v1/users", userId.String(), "/scopes"), jsonbytes)
 }
 
 // ================================================================
@@ -99,7 +132,7 @@ func NewDogmas() (*Dogmas, error) {
 
 	return &Dogmas{
 		Host:     u.String(),
-		Endpoint: u.JoinPath("/resources/v1"),
+		Endpoint: u,
 	}, nil
 }
 
@@ -143,23 +176,7 @@ func (d Dogmas) ScopesRegister() her.Error {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
-	req, err := http.NewRequest("POST", d.Endpoint.JoinPath("scopes").String(), bytes.NewReader(jsonbytes))
-	if err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
-	}
-
-	payload := her.NewPayload(nil)
-	client := &http.Client{}
-
-	if resp, err := client.Do(req); err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
-	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
-		return err
-	} else if resp.StatusCode != 201 {
-		return her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
-	}
-
-	return nil
+	return apiPost(d.Endpoint.JoinPath("/resources/v1/scopes"), jsonbytes)
 }
 
 func (d Dogmas) AuthorizationRulesRegister() her.Error {
@@ -168,7 +185,12 @@ func (d Dogmas) AuthorizationRulesRegister() her.Error {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
-	req, err := http.NewRequest("POST", d.Endpoint.JoinPath("rules").String(), bytes.NewReader(jsonbytes))
+	return apiPost(d.Endpoint.JoinPath("/resources/v1/rules"), jsonbytes)
+}
+
+// ================================================================
+func apiPost(endpoint *url.URL, jsonbytes []byte) her.Error {
+	req, err := http.NewRequest("POST", endpoint.String(), bytes.NewReader(jsonbytes))
 	if err != nil {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
