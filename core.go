@@ -128,6 +128,32 @@ func (s Scope) setUserPermissions(userId xuuid.UUID, action string, scopes []str
 	return apiPost(s.Dogmas.Endpoint.JoinPath("/permissions/v1/users", userId.String(), "/scopes"), jsonbytes)
 }
 
+func (s Scope) HasPermission(userId xuuid.UUID) (bool, her.Error) {
+	endpoint := s.Dogmas.Endpoint.JoinPath("/permissions/v1/users", userId.String(), "/scopes", s.Identifier)
+	req, err := http.NewRequest("GET", endpoint.String(), nil)
+	if err != nil {
+		return false, her.NewError(http.StatusInternalServerError, err, nil)
+	}
+
+	payload := her.NewPayload(nil)
+	client := &http.Client{}
+
+	if resp, err := client.Do(req); err != nil {
+		return false, her.NewError(http.StatusInternalServerError, err, nil)
+	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
+		return false, err
+	} else {
+		switch resp.StatusCode {
+		case http.StatusOK:
+			return true, nil
+		case http.StatusNotFound:
+			return false, nil
+		}
+	}
+
+	return false, her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
+}
+
 // ================================================================
 //
 // ================================================================
