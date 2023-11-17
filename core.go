@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hexcraft-biz/her"
@@ -27,9 +29,9 @@ func New(e *gin.Engine, startsWith string, d *Dogmas) *Feature {
 	}
 }
 
-type HandlerFunc func(*Scope) gin.HandlerFunc
+type HandlerFunc func(*Endpoint) gin.HandlerFunc
 
-func handlerFuncs(s *Scope, handlers []HandlerFunc) []gin.HandlerFunc {
+func handlerFuncs(s *Endpoint, handlers []HandlerFunc) []gin.HandlerFunc {
 	funcs := make([]gin.HandlerFunc, len(handlers))
 	for i, h := range handlers {
 		funcs[i] = h(s)
@@ -37,100 +39,118 @@ func handlerFuncs(s *Scope, handlers []HandlerFunc) []gin.HandlerFunc {
 	return funcs
 }
 
-func (f *Feature) GET(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
-	s := f.Dogmas.addScope(identifier, description)
-	f.RouterGroup.GET(relativePath, handlerFuncs(s, handlers)...)
+func (f *Feature) GET(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
+	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "GET", path)
+	f.RouterGroup.GET(path, handlerFuncs(s, handlers)...)
 	return s
 }
 
-func (f *Feature) POST(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
-	s := f.Dogmas.addScope(identifier, description)
-	f.RouterGroup.POST(relativePath, handlerFuncs(s, handlers)...)
+func (f *Feature) POST(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
+	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "POST", path)
+	f.RouterGroup.POST(path, handlerFuncs(s, handlers)...)
 	return s
 }
 
-func (f *Feature) PUT(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
-	s := f.Dogmas.addScope(identifier, description)
-	f.RouterGroup.PUT(relativePath, handlerFuncs(s, handlers)...)
+func (f *Feature) PUT(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
+	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "PUT", path)
+	f.RouterGroup.PUT(path, handlerFuncs(s, handlers)...)
 	return s
 }
 
-func (f *Feature) PATCH(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
-	s := f.Dogmas.addScope(identifier, description)
-	f.RouterGroup.PATCH(relativePath, handlerFuncs(s, handlers)...)
+func (f *Feature) PATCH(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
+	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "PATCH", path)
+	f.RouterGroup.PATCH(path, handlerFuncs(s, handlers)...)
 	return s
 }
 
-func (f *Feature) DELETE(relativePath, identifier, description string, handlers ...HandlerFunc) *Scope {
-	s := f.Dogmas.addScope(identifier, description)
-	f.RouterGroup.DELETE(relativePath, handlerFuncs(s, handlers)...)
+func (f *Feature) DELETE(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
+	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "DELETE", path)
+	f.RouterGroup.DELETE(path, handlerFuncs(s, handlers)...)
 	return s
 }
 
 // ================================================================
 //
 // ================================================================
-type Scope struct {
-	*Dogmas     `json:"-"`
-	Identifier  string `json:"identifier"`
-	Description string `json:"description"`
+const (
+	OnBehaviorOfOrganization = "ORGANIZATION"
+	OnBehaviorOfDataOwner    = "DATA_OWNER"
+)
+
+type Endpoint struct {
+	*Dogmas            `json:"-"`
+	EndpointIdentifier string  `json:"endpointIdentifier"`
+	OnBehaviorOf       string  `json:"onBehaviorOf"`
+	Method             string  `json:"method"`
+	UrlHost            *string `json:"urlHost"`
+	UrlPath            string  `json:"urlPath"`
 }
 
-type ScopeAuthorizationRule struct {
-	Scope         *string `json:"scope"`
-	Action        string  `json:"action"`
-	AffectedScope string  `json:"affectedScope"`
+type EndpointAuthorizationRule struct {
+	EndpointIdentifier         *string `json:"endpointIdentifier"`
+	Action                     string  `json:"action"`
+	AffectedEndpointIdentifier string  `json:"affectedEndpointIdentifier"`
 }
 
-type UserPermissions struct {
-	Scope         *string  `json:"scope"`
-	Action        string   `json:"action"`
-	AffectedScope []string `json:"affectedScopes"`
+type UserPrivileges struct {
+	EndpointIdentifier          *string  `json:"endpointIdentifier"`
+	Action                      string   `json:"action"`
+	AffectedEndpointIdentifiers []string `json:"affectedEndpointIdentifiers"`
 }
 
-func (s *Scope) CanAssignUserAccess(affectedScope string) *Scope {
-	s.Dogmas.addAssignScopeAuthorizationRule(s, affectedScope)
-	return s
+func (e *Endpoint) CanAssignUserAccess(identifier string) *Endpoint {
+	e.Dogmas.addEndpointAuthorizationRule(e, "ASSIGN", identifier)
+	return e
 }
 
-func (s *Scope) CanGrantUserAccess(affectedScope string) *Scope {
-	s.Dogmas.addGrantScopeAuthorizationRule(s, affectedScope)
-	return s
+func (e *Endpoint) CanGrantUserAccess(identifier string) *Endpoint {
+	e.Dogmas.addEndpointAuthorizationRule(e, "GRANT", identifier)
+	return e
 }
 
-func (s *Scope) CanRevokeUserAccess(affectedScope string) *Scope {
-	s.Dogmas.addRevokeScopeAuthorizationRule(s, affectedScope)
-	return s
+func (e *Endpoint) CanRevokeUserAccess(identifier string) *Endpoint {
+	e.Dogmas.addEndpointAuthorizationRule(e, "REVOKE", identifier)
+	return e
 }
 
-func (s Scope) AssignUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
-	return s.setUserPermissions(userId, "ASSIGN", scopes)
+func (e *Endpoint) CanUnassignUserAccess(identifier string) *Endpoint {
+	e.Dogmas.addEndpointAuthorizationRule(e, "UNASSIGN", identifier)
+	return e
 }
 
-func (s Scope) GrantUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
-	return s.setUserPermissions(userId, "GRANT", scopes)
+// ================================================================
+func (e Endpoint) AssignUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+	return e.setUserPrivileges(userId, "ASSIGN", identifiers)
 }
 
-func (s Scope) RevokeUserPermissions(userId xuuid.UUID, scopes []string) her.Error {
-	return s.setUserPermissions(userId, "REVOKE", scopes)
+func (e Endpoint) GrantUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+	return e.setUserPrivileges(userId, "GRANT", identifiers)
 }
 
-func (s Scope) setUserPermissions(userId xuuid.UUID, action string, scopes []string) her.Error {
-	jsonbytes, err := json.Marshal(&UserPermissions{
-		Scope:         &s.Identifier,
-		Action:        action,
-		AffectedScope: scopes,
+func (e Endpoint) RevokeUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+	return e.setUserPrivileges(userId, "REVOKE", identifiers)
+}
+
+func (e Endpoint) UnassignUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+	return e.setUserPrivileges(userId, "UNASSIGN", identifiers)
+}
+
+func (e Endpoint) setUserPrivileges(userId xuuid.UUID, action string, identifiers []string) her.Error {
+	jsonbytes, err := json.Marshal(&UserPrivileges{
+		EndpointIdentifier:          &e.EndpointIdentifier,
+		Action:                      action,
+		AffectedEndpointIdentifiers: identifiers,
 	})
 	if err != nil {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
-	return apiPost(s.Dogmas.Endpoint.JoinPath("/permissions/v1/users", userId.String(), "/scopes"), jsonbytes)
+	return apiPost(e.Dogmas.HostUrl.JoinPath("/privileges/v1/users", userId.String(), "/endpoints"), jsonbytes)
 }
 
-func (s Scope) HasPermission(userId xuuid.UUID) (bool, her.Error) {
-	endpoint := s.Dogmas.Endpoint.JoinPath("/permissions/v1/users", userId.String(), "/scopes", s.Identifier)
-	req, err := http.NewRequest("GET", endpoint.String(), nil)
+func (e Endpoint) HasPrivilege(userId xuuid.UUID) (bool, her.Error) {
+	apiUrl := e.Dogmas.HostUrl.JoinPath("/privileges/v1/users", userId.String(), "/endpoints", e.EndpointIdentifier)
+	req, err := http.NewRequest("GET", apiUrl.String(), nil)
 	if err != nil {
 		return false, her.NewError(http.StatusInternalServerError, err, nil)
 	}
@@ -158,79 +178,68 @@ func (s Scope) HasPermission(userId xuuid.UUID) (bool, her.Error) {
 //
 // ================================================================
 type Dogmas struct {
-	Host                    string
-	Endpoint                *url.URL
-	Scopes                  []*Scope
-	ScopeAuthorizationRules []*ScopeAuthorizationRule
+	HostUrl                    *url.URL
+	AppHost                    string
+	Endpoints                  []*Endpoint
+	EndpointAuthorizationRules []*EndpointAuthorizationRule
 }
 
-func NewDogmas() (*Dogmas, error) {
+func NewDogmas(appHostUrl *url.URL) (*Dogmas, error) {
 	u, err := url.ParseRequestURI(os.Getenv("HOST_DOGMAS"))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Dogmas{
-		Host:     u.String(),
-		Endpoint: u,
+		HostUrl: u,
+		AppHost: appHostUrl.String(),
 	}, nil
 }
 
-func (d *Dogmas) addScope(identifier, description string) *Scope {
-	s := &Scope{
-		Dogmas:      d,
-		Identifier:  identifier,
-		Description: description,
+func (d *Dogmas) addEndpoint(identifier, onBehaviorOf, method, path string) *Endpoint {
+	e := &Endpoint{
+		Dogmas:             d,
+		EndpointIdentifier: identifier,
+		OnBehaviorOf:       onBehaviorOf,
+		Method:             method,
+		UrlHost:            &d.AppHost,
+		UrlPath:            path,
 	}
-	d.Scopes = append(d.Scopes, s)
-	return s
+	d.Endpoints = append(d.Endpoints, e)
+	return e
 }
 
-func (d *Dogmas) addAssignScopeAuthorizationRule(scope *Scope, affectedScope string) {
-	d.ScopeAuthorizationRules = append(d.ScopeAuthorizationRules, &ScopeAuthorizationRule{
-		Scope:         &scope.Identifier,
-		Action:        "ASSIGN",
-		AffectedScope: affectedScope,
-	})
+func (d *Dogmas) addEndpointAuthorizationRule(e *Endpoint, action, identifier string) {
+	if e.OnBehaviorOf == OnBehaviorOfOrganization {
+		d.EndpointAuthorizationRules = append(d.EndpointAuthorizationRules, &EndpointAuthorizationRule{
+			EndpointIdentifier:         &e.EndpointIdentifier,
+			Action:                     action,
+			AffectedEndpointIdentifier: identifier,
+		})
+	}
 }
 
-func (d *Dogmas) addGrantScopeAuthorizationRule(scope *Scope, affectedScope string) {
-	d.ScopeAuthorizationRules = append(d.ScopeAuthorizationRules, &ScopeAuthorizationRule{
-		Scope:         &scope.Identifier,
-		Action:        "GRANT",
-		AffectedScope: affectedScope,
-	})
-}
-
-func (d *Dogmas) addRevokeScopeAuthorizationRule(scope *Scope, affectedScope string) {
-	d.ScopeAuthorizationRules = append(d.ScopeAuthorizationRules, &ScopeAuthorizationRule{
-		Scope:         &scope.Identifier,
-		Action:        "REVOKE",
-		AffectedScope: affectedScope,
-	})
-}
-
-func (d Dogmas) ScopesRegister() her.Error {
-	jsonbytes, err := json.Marshal(d.Scopes)
+func (d Dogmas) RegisterEndpoints() her.Error {
+	jsonbytes, err := json.Marshal(d.Endpoints)
 	if err != nil {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
-	return apiPost(d.Endpoint.JoinPath("/resources/v1/scopes"), jsonbytes)
+	return apiPost(d.HostUrl.JoinPath("/resources/v1/endpoints"), jsonbytes)
 }
 
-func (d Dogmas) AuthorizationRulesRegister() her.Error {
-	jsonbytes, err := json.Marshal(d.ScopeAuthorizationRules)
+func (d Dogmas) RegisterEndpointAuthorizationRules() her.Error {
+	jsonbytes, err := json.Marshal(d.EndpointAuthorizationRules)
 	if err != nil {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
-	return apiPost(d.Endpoint.JoinPath("/resources/v1/rules"), jsonbytes)
+	return apiPost(d.HostUrl.JoinPath("/resources/v1/rules"), jsonbytes)
 }
 
 // ================================================================
-func apiPost(endpoint *url.URL, jsonbytes []byte) her.Error {
-	req, err := http.NewRequest("POST", endpoint.String(), bytes.NewReader(jsonbytes))
+func apiPost(apiUrl *url.URL, jsonbytes []byte) her.Error {
+	req, err := http.NewRequest("POST", apiUrl.String(), bytes.NewReader(jsonbytes))
 	if err != nil {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
@@ -247,4 +256,63 @@ func apiPost(endpoint *url.URL, jsonbytes []byte) her.Error {
 	}
 
 	return nil
+}
+
+// ================================================================
+const (
+	Delimiter = " "
+)
+
+type Identifiers map[string]bool
+
+func NewIdentifiers(input any) Identifiers {
+	items := []string{}
+	if reflect.TypeOf(input).Kind() == reflect.Slice {
+		items = input.([]string)
+	} else {
+		items = strings.Split(input.(string), Delimiter)
+	}
+
+	identifiers := Identifiers{}
+	for _, i := range items {
+		identifiers.Set(i)
+	}
+
+	return identifiers
+}
+
+func (i *Identifiers) Set(item string) {
+	(*i)[item] = true
+}
+
+func (i Identifiers) HasOneOf(sub Identifiers) bool {
+	for item, has := range sub {
+		if has {
+			if val, ok := i[item]; ok && val {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (i Identifiers) Contains(sub Identifiers) bool {
+	for item, has := range sub {
+		if has {
+			if val, ok := i[item]; !ok || !val {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (i Identifiers) Slice() []string {
+	ss := []string{}
+	for endpoint, has := range i {
+		if has {
+			ss = append(ss, endpoint)
+		}
+	}
+	return ss
 }
