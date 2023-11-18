@@ -17,6 +17,11 @@ import (
 // ================================================================
 //
 // ================================================================
+const (
+	ByAuthorityOfOrganization = "ORGANIZATION"
+	ByAuthorityOfDataOwner    = "DATA_OWNER"
+)
+
 type Feature struct {
 	*gin.RouterGroup
 	*Dogmas
@@ -31,124 +36,197 @@ func New(e *gin.Engine, startsWith string, d *Dogmas) *Feature {
 
 type HandlerFunc func(*Endpoint) gin.HandlerFunc
 
-func handlerFuncs(s *Endpoint, handlers []HandlerFunc) []gin.HandlerFunc {
+func handlerFuncs(e *Endpoint, handlers []HandlerFunc) []gin.HandlerFunc {
 	funcs := make([]gin.HandlerFunc, len(handlers))
 	for i, h := range handlers {
-		funcs[i] = h(s)
+		funcs[i] = h(e)
 	}
 	return funcs
-}
-
-func (f *Feature) GET(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
-	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "GET", path)
-	f.RouterGroup.GET(path, handlerFuncs(s, handlers)...)
-	return s
-}
-
-func (f *Feature) POST(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
-	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "POST", path)
-	f.RouterGroup.POST(path, handlerFuncs(s, handlers)...)
-	return s
-}
-
-func (f *Feature) PUT(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
-	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "PUT", path)
-	f.RouterGroup.PUT(path, handlerFuncs(s, handlers)...)
-	return s
-}
-
-func (f *Feature) PATCH(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
-	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "PATCH", path)
-	f.RouterGroup.PATCH(path, handlerFuncs(s, handlers)...)
-	return s
-}
-
-func (f *Feature) DELETE(path, identifier, onBehaviorOf string, handlers ...HandlerFunc) *Endpoint {
-	s := f.Dogmas.addEndpoint(identifier, onBehaviorOf, "DELETE", path)
-	f.RouterGroup.DELETE(path, handlerFuncs(s, handlers)...)
-	return s
 }
 
 // ================================================================
 //
 // ================================================================
-const (
-	OnBehaviorOfOrganization = "ORGANIZATION"
-	OnBehaviorOfDataOwner    = "DATA_OWNER"
-)
+type OrganizationHttpMethod struct {
+	*Feature
+}
+
+type DataOwnerHttpMethod struct {
+	*Feature
+}
+
+type OrganizationEndpoint Endpoint
+type DataOwnerEndpoint Endpoint
 
 type Endpoint struct {
 	*Dogmas            `json:"-"`
 	EndpointIdentifier string  `json:"endpointIdentifier"`
-	OnBehaviorOf       string  `json:"onBehaviorOf"`
+	ByAuthorityOf      string  `json:"byAuthorityOf"`
 	Method             string  `json:"method"`
 	UrlHost            *string `json:"urlHost"`
 	UrlPath            string  `json:"urlPath"`
 }
 
+// ================================================================
+func (f *Feature) ByAuthorityOfOrganization() *OrganizationHttpMethod {
+	return &OrganizationHttpMethod{
+		Feature: f,
+	}
+}
+
+func (m *OrganizationHttpMethod) GET(path, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "GET", path)
+	m.RouterGroup.GET(path, handlerFuncs(e, handlers)...)
+	return (*OrganizationEndpoint)(e)
+}
+
+func (m *OrganizationHttpMethod) POST(path, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "POST", path)
+	m.RouterGroup.POST(path, handlerFuncs(e, handlers)...)
+	return (*OrganizationEndpoint)(e)
+}
+
+func (m *OrganizationHttpMethod) PUT(path, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "PUT", path)
+	m.RouterGroup.PUT(path, handlerFuncs(e, handlers)...)
+	return (*OrganizationEndpoint)(e)
+}
+
+func (m *OrganizationHttpMethod) PATCH(path, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "PATCH", path)
+	m.RouterGroup.PATCH(path, handlerFuncs(e, handlers)...)
+	return (*OrganizationEndpoint)(e)
+}
+
+func (m *OrganizationHttpMethod) DELETE(path, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "DELETE", path)
+	m.RouterGroup.DELETE(path, handlerFuncs(e, handlers)...)
+	return (*OrganizationEndpoint)(e)
+}
+
+// ================================================================
+func (f *Feature) ByAuthorityOfDataOwner() *DataOwnerHttpMethod {
+	return &DataOwnerHttpMethod{
+		Feature: f,
+	}
+}
+
+func (m *DataOwnerHttpMethod) GET(path, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "GET", path)
+	m.RouterGroup.GET(path, handlerFuncs(e, handlers)...)
+	return (*DataOwnerEndpoint)(e)
+}
+
+func (m *DataOwnerHttpMethod) POST(path, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "POST", path)
+	m.RouterGroup.POST(path, handlerFuncs(e, handlers)...)
+	return (*DataOwnerEndpoint)(e)
+}
+
+func (m *DataOwnerHttpMethod) PUT(path, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "PUT", path)
+	m.RouterGroup.PUT(path, handlerFuncs(e, handlers)...)
+	return (*DataOwnerEndpoint)(e)
+}
+
+func (m *DataOwnerHttpMethod) PATCH(path, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "PATCH", path)
+	m.RouterGroup.PATCH(path, handlerFuncs(e, handlers)...)
+	return (*DataOwnerEndpoint)(e)
+}
+
+func (m *DataOwnerHttpMethod) DELETE(path, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "DELETE", path)
+	m.RouterGroup.DELETE(path, handlerFuncs(e, handlers)...)
+	return (*DataOwnerEndpoint)(e)
+}
+
+// ================================================================
+//
+// ================================================================
 type EndpointAuthorizationRule struct {
 	EndpointIdentifier         *string `json:"endpointIdentifier"`
 	Action                     string  `json:"action"`
 	AffectedEndpointIdentifier string  `json:"affectedEndpointIdentifier"`
 }
 
+func (e *OrganizationEndpoint) CanAssignUserAccess(identifier string) *OrganizationEndpoint {
+	e.Dogmas.EndpointAuthorizationRules = append(e.Dogmas.EndpointAuthorizationRules, &EndpointAuthorizationRule{
+		EndpointIdentifier:         &e.EndpointIdentifier,
+		Action:                     "ASSIGN",
+		AffectedEndpointIdentifier: identifier,
+	})
+	return e
+}
+
+func (e *OrganizationEndpoint) CanGrantUserAccess(identifier string) *OrganizationEndpoint {
+	e.Dogmas.EndpointAuthorizationRules = append(e.Dogmas.EndpointAuthorizationRules, &EndpointAuthorizationRule{
+		EndpointIdentifier:         &e.EndpointIdentifier,
+		Action:                     "GRANT",
+		AffectedEndpointIdentifier: identifier,
+	})
+	return e
+}
+
+func (e *OrganizationEndpoint) CanRevokeUserAccess(identifier string) *OrganizationEndpoint {
+	e.Dogmas.EndpointAuthorizationRules = append(e.Dogmas.EndpointAuthorizationRules, &EndpointAuthorizationRule{
+		EndpointIdentifier:         &e.EndpointIdentifier,
+		Action:                     "REVOKE",
+		AffectedEndpointIdentifier: identifier,
+	})
+	return e
+}
+
+func (e *OrganizationEndpoint) CanUnassignUserAccess(identifier string) *OrganizationEndpoint {
+	e.Dogmas.EndpointAuthorizationRules = append(e.Dogmas.EndpointAuthorizationRules, &EndpointAuthorizationRule{
+		EndpointIdentifier:         &e.EndpointIdentifier,
+		Action:                     "UNASSIGN",
+		AffectedEndpointIdentifier: identifier,
+	})
+	return e
+}
+
+// ================================================================
 type UserPrivileges struct {
 	EndpointIdentifier          *string  `json:"endpointIdentifier"`
 	Action                      string   `json:"action"`
 	AffectedEndpointIdentifiers []string `json:"affectedEndpointIdentifiers"`
 }
 
-func (e *Endpoint) CanAssignUserAccess(identifier string) *Endpoint {
-	e.Dogmas.addEndpointAuthorizationRule(e, "ASSIGN", identifier)
-	return e
-}
-
-func (e *Endpoint) CanGrantUserAccess(identifier string) *Endpoint {
-	e.Dogmas.addEndpointAuthorizationRule(e, "GRANT", identifier)
-	return e
-}
-
-func (e *Endpoint) CanRevokeUserAccess(identifier string) *Endpoint {
-	e.Dogmas.addEndpointAuthorizationRule(e, "REVOKE", identifier)
-	return e
-}
-
-func (e *Endpoint) CanUnassignUserAccess(identifier string) *Endpoint {
-	e.Dogmas.addEndpointAuthorizationRule(e, "UNASSIGN", identifier)
-	return e
-}
-
-// ================================================================
-func (e Endpoint) AssignUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+func (e OrganizationEndpoint) AssignUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
 	return e.setUserPrivileges(userId, "ASSIGN", identifiers)
 }
 
-func (e Endpoint) GrantUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+func (e OrganizationEndpoint) GrantUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
 	return e.setUserPrivileges(userId, "GRANT", identifiers)
 }
 
-func (e Endpoint) RevokeUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+func (e OrganizationEndpoint) RevokeUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
 	return e.setUserPrivileges(userId, "REVOKE", identifiers)
 }
 
-func (e Endpoint) UnassignUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
+func (e OrganizationEndpoint) UnassignUserPrivileges(userId xuuid.UUID, identifiers []string) her.Error {
 	return e.setUserPrivileges(userId, "UNASSIGN", identifiers)
 }
 
-func (e Endpoint) setUserPrivileges(userId xuuid.UUID, action string, identifiers []string) her.Error {
-	jsonbytes, err := json.Marshal(&UserPrivileges{
-		EndpointIdentifier:          &e.EndpointIdentifier,
-		Action:                      action,
-		AffectedEndpointIdentifiers: identifiers,
-	})
-	if err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
+func (e OrganizationEndpoint) setUserPrivileges(userId xuuid.UUID, action string, identifiers []string) her.Error {
+	if len(identifiers) > 0 {
+		jsonbytes, err := json.Marshal(&UserPrivileges{
+			EndpointIdentifier:          &e.EndpointIdentifier,
+			Action:                      action,
+			AffectedEndpointIdentifiers: identifiers,
+		})
+		if err != nil {
+			return her.NewError(http.StatusInternalServerError, err, nil)
+		}
+
+		return apiPost(e.Dogmas.HostUrl.JoinPath("/privileges/v1/users", userId.String(), "/endpoints"), jsonbytes)
 	}
 
-	return apiPost(e.Dogmas.HostUrl.JoinPath("/privileges/v1/users", userId.String(), "/endpoints"), jsonbytes)
+	return nil
 }
 
-func (e Endpoint) HasPrivilege(userId xuuid.UUID) (bool, her.Error) {
+func (e OrganizationEndpoint) HasPrivilege(userId xuuid.UUID) (bool, her.Error) {
 	apiUrl := e.Dogmas.HostUrl.JoinPath("/privileges/v1/users", userId.String(), "/endpoints", e.EndpointIdentifier)
 	req, err := http.NewRequest("GET", apiUrl.String(), nil)
 	if err != nil {
@@ -196,11 +274,11 @@ func NewDogmas(appHostUrl *url.URL) (*Dogmas, error) {
 	}, nil
 }
 
-func (d *Dogmas) addEndpoint(identifier, onBehaviorOf, method, path string) *Endpoint {
+func (d *Dogmas) addEndpoint(identifier, byAuthorityOf, method, path string) *Endpoint {
 	e := &Endpoint{
 		Dogmas:             d,
 		EndpointIdentifier: identifier,
-		OnBehaviorOf:       onBehaviorOf,
+		ByAuthorityOf:      byAuthorityOf,
 		Method:             method,
 		UrlHost:            &d.AppHost,
 		UrlPath:            path,
@@ -209,32 +287,30 @@ func (d *Dogmas) addEndpoint(identifier, onBehaviorOf, method, path string) *End
 	return e
 }
 
-func (d *Dogmas) addEndpointAuthorizationRule(e *Endpoint, action, identifier string) {
-	if e.OnBehaviorOf == OnBehaviorOfOrganization {
-		d.EndpointAuthorizationRules = append(d.EndpointAuthorizationRules, &EndpointAuthorizationRule{
-			EndpointIdentifier:         &e.EndpointIdentifier,
-			Action:                     action,
-			AffectedEndpointIdentifier: identifier,
-		})
-	}
-}
-
 func (d Dogmas) RegisterEndpoints() her.Error {
-	jsonbytes, err := json.Marshal(d.Endpoints)
-	if err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
+	if len(d.Endpoints) > 0 {
+		jsonbytes, err := json.Marshal(d.Endpoints)
+		if err != nil {
+			return her.NewError(http.StatusInternalServerError, err, nil)
+		}
+
+		return apiPost(d.HostUrl.JoinPath("/resources/v1/endpoints"), jsonbytes)
 	}
 
-	return apiPost(d.HostUrl.JoinPath("/resources/v1/endpoints"), jsonbytes)
+	return nil
 }
 
 func (d Dogmas) RegisterEndpointAuthorizationRules() her.Error {
-	jsonbytes, err := json.Marshal(d.EndpointAuthorizationRules)
-	if err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
+	if len(d.EndpointAuthorizationRules) > 0 {
+		jsonbytes, err := json.Marshal(d.EndpointAuthorizationRules)
+		if err != nil {
+			return her.NewError(http.StatusInternalServerError, err, nil)
+		}
+
+		return apiPost(d.HostUrl.JoinPath("/resources/v1/rules"), jsonbytes)
 	}
 
-	return apiPost(d.HostUrl.JoinPath("/resources/v1/rules"), jsonbytes)
+	return nil
 }
 
 // ================================================================
