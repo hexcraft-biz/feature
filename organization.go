@@ -120,7 +120,7 @@ const (
 
 type organizationUserAccess struct {
 	DogmasApiUrl        *url.URL
-	EndpointIdentifier  *string
+	EndpointIdentifier  *Md5Identifier
 	accessRulesToCommit map[int]map[string]*EndpointAccessRules
 }
 
@@ -184,9 +184,9 @@ func (u *targetEndpointAccessRules) addAction(action int, rule string) *targetEn
 }
 
 type EndpointAccessRulesWithBehavior struct {
-	Behavior                   string               `json:"behavior" db:"-" binding:"required"`
-	AffectedEndpointIdentifier string               `json:"affectedEndpointIdentifier" db:"-" binding:"required"`
-	AccessRules                *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
+	Behavior           string               `json:"behavior" db:"-" binding:"required"`
+	EndpointIdentifier string               `json:"endpointIdentifier" db:"endpoint_identifier" binding:"required"`
+	AccessRules        *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
 }
 
 const (
@@ -211,9 +211,9 @@ func (u *organizationUserAccess) Commit(byUserId xuuid.UUID) her.Error {
 		for identifier, accessRules := range identifiers {
 			accessRules.RemoveRedundant()
 			rulesWithBehavior = append(rulesWithBehavior, &EndpointAccessRulesWithBehavior{
-				Behavior:                   behaviorstring,
-				AffectedEndpointIdentifier: identifier,
-				AccessRules:                accessRules,
+				Behavior:           behaviorstring,
+				EndpointIdentifier: identifier,
+				AccessRules:        accessRules,
 			})
 		}
 	}
@@ -229,7 +229,7 @@ func (u *organizationUserAccess) Commit(byUserId xuuid.UUID) her.Error {
 			return her.NewError(http.StatusInternalServerError, err, nil)
 		}
 
-		req.Header.Set(HeaderEndpointIdentiifer, *u.EndpointIdentifier)
+		req.Header.Set(HeaderEndpointIdentiifer, string(*u.EndpointIdentifier))
 		req.Header.Set(HeaderByUserId, byUserId.String())
 
 		payload := her.NewPayload(nil)

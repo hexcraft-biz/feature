@@ -3,6 +3,8 @@ package feature
 import (
 	"bytes"
 	"crypto/md5"
+	"database/sql/driver"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -46,7 +48,7 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string) *Endpo
 	}
 	e := &Endpoint{
 		Dogmas:             f.Dogmas,
-		EndpointIdentifier: fmt.Sprintf("%x", md5.Sum([]byte(method+u.String()))),
+		EndpointIdentifier: Md5Identifier(fmt.Sprintf("%x", md5.Sum([]byte(method+u.String())))),
 		ByAuthorityOf:      byAuthorityOf,
 		Method:             method,
 		UrlHost:            &f.Dogmas.AppHost,
@@ -79,12 +81,12 @@ func handlerFuncs(e *Endpoint, handlers []HandlerFunc) []gin.HandlerFunc {
 
 type Endpoint struct {
 	*Dogmas            `json:"-"`
-	EndpointIdentifier string  `json:"endpointIdentifier"`
-	ByAuthorityOf      string  `json:"byAuthorityOf"`
-	Method             string  `json:"method"`
-	UrlHost            *string `json:"urlHost"`
-	UrlFeature         *string `json:"urlFeature"`
-	UrlPath            string  `json:"urlPath"`
+	EndpointIdentifier Md5Identifier `json:"endpointIdentifier"`
+	ByAuthorityOf      string        `json:"byAuthorityOf"`
+	Method             string        `json:"method"`
+	UrlHost            *string       `json:"urlHost"`
+	UrlFeature         *string       `json:"urlFeature"`
+	UrlPath            string        `json:"urlPath"`
 }
 
 // ================================================================
@@ -234,4 +236,31 @@ func isCoveredBy(key string, patterns []*regexp.Regexp) bool {
 		}
 	}
 	return false
+}
+
+// ================================================================
+type Md5Identifier string
+
+func (ms *Md5Identifier) Scan(value any) error {
+	if value == nil {
+		*ms = ""
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("Md5Identifier.Scan: expected []byte, got %T", value)
+	}
+
+	*ms = Md5Identifier(hex.EncodeToString(b))
+	return nil
+}
+
+func (ms Md5Identifier) Value() (driver.Value, error) {
+	b, err := hex.DecodeString(string(ms))
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
