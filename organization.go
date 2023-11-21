@@ -35,32 +35,32 @@ func (f *Feature) ByAuthorityOfOrganization() *OrganizationHttpMethods {
 	}
 }
 
-func (m *OrganizationHttpMethods) GET(relativePath, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "GET", relativePath)
+func (m *OrganizationHttpMethods) GET(relativePath string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(ByAuthorityOfOrganization, "GET", relativePath)
 	m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
 	return newOrganizationEndpoint(e)
 }
 
-func (m *OrganizationHttpMethods) POST(relativePath, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "POST", relativePath)
+func (m *OrganizationHttpMethods) POST(relativePath string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(ByAuthorityOfOrganization, "POST", relativePath)
 	m.RouterGroup.POST(relativePath, handlerFuncs(e, handlers)...)
 	return newOrganizationEndpoint(e)
 }
 
-func (m *OrganizationHttpMethods) PUT(relativePath, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "PUT", relativePath)
+func (m *OrganizationHttpMethods) PUT(relativePath string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(ByAuthorityOfOrganization, "PUT", relativePath)
 	m.RouterGroup.PUT(relativePath, handlerFuncs(e, handlers)...)
 	return newOrganizationEndpoint(e)
 }
 
-func (m *OrganizationHttpMethods) PATCH(relativePath, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "PATCH", relativePath)
+func (m *OrganizationHttpMethods) PATCH(relativePath string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(ByAuthorityOfOrganization, "PATCH", relativePath)
 	m.RouterGroup.PATCH(relativePath, handlerFuncs(e, handlers)...)
 	return newOrganizationEndpoint(e)
 }
 
-func (m *OrganizationHttpMethods) DELETE(relativePath, identifier string, handlers ...HandlerFunc) *OrganizationEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfOrganization, "DELETE", relativePath)
+func (m *OrganizationHttpMethods) DELETE(relativePath string, handlers ...HandlerFunc) *OrganizationEndpoint {
+	e := m.addEndpoint(ByAuthorityOfOrganization, "DELETE", relativePath)
 	m.RouterGroup.DELETE(relativePath, handlerFuncs(e, handlers)...)
 	return newOrganizationEndpoint(e)
 }
@@ -132,19 +132,31 @@ func (e *OrganizationEndpoint) ManageAccessFor(userId xuuid.UUID) *organizationU
 	}
 }
 
-func (u *organizationUserAccess) Assign(identifier string, rule string) *organizationUserAccess {
-	return u.addAction(ActionAssign, identifier, rule)
+type targetEndpointAccessRules struct {
+	*organizationUserAccess
+	endpointIdentifier string
 }
 
-func (u *organizationUserAccess) Grant(identifier string, rule string) *organizationUserAccess {
-	return u.addAction(ActionGrant, identifier, rule)
+func (u *organizationUserAccess) TargetEndpoint(method, appHost, urlFeature, urlPath string) *targetEndpointAccessRules {
+	return &targetEndpointAccessRules{
+		organizationUserAccess: u,
+		endpointIdentifier:     EndpointIdentifier(method, appHost, urlFeature, urlPath),
+	}
 }
 
-func (u *organizationUserAccess) Revoke(identifier string, rule string) *organizationUserAccess {
-	return u.addAction(ActionRevoke, identifier, rule)
+func (u *targetEndpointAccessRules) Assign(rule string) *targetEndpointAccessRules {
+	return u.addAction(ActionAssign, rule)
 }
 
-func (u *organizationUserAccess) addAction(action int, identifier string, rule string) *organizationUserAccess {
+func (u *targetEndpointAccessRules) Grant(rule string) *targetEndpointAccessRules {
+	return u.addAction(ActionGrant, rule)
+}
+
+func (u *targetEndpointAccessRules) Revoke(rule string) *targetEndpointAccessRules {
+	return u.addAction(ActionRevoke, rule)
+}
+
+func (u *targetEndpointAccessRules) addAction(action int, rule string) *targetEndpointAccessRules {
 	behavior := WriteBehaviorUndef
 	switch action {
 	case ActionGrant, ActionRevoke:
@@ -157,15 +169,15 @@ func (u *organizationUserAccess) addAction(action int, identifier string, rule s
 		u.accessRulesToCommit[behavior] = map[string]*EndpointAccessRules{}
 	}
 
-	if _, ok := u.accessRulesToCommit[behavior][identifier]; !ok {
-		u.accessRulesToCommit[behavior][identifier] = &EndpointAccessRules{}
+	if _, ok := u.accessRulesToCommit[behavior][u.endpointIdentifier]; !ok {
+		u.accessRulesToCommit[behavior][u.endpointIdentifier] = &EndpointAccessRules{}
 	}
 
 	switch action {
 	case ActionAssign, ActionGrant:
-		u.accessRulesToCommit[behavior][identifier].AddSubset(rule)
+		u.accessRulesToCommit[behavior][u.endpointIdentifier].AddSubset(rule)
 	case ActionRevoke:
-		u.accessRulesToCommit[behavior][identifier].AddException(rule)
+		u.accessRulesToCommit[behavior][u.endpointIdentifier].AddException(rule)
 	}
 
 	return u

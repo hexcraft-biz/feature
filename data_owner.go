@@ -23,32 +23,32 @@ func (f *Feature) ByAuthorityOfDataOwner() *DataOwnerHttpMethods {
 	}
 }
 
-func (m *DataOwnerHttpMethods) GET(relativePath, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "GET", relativePath)
+func (m *DataOwnerHttpMethods) GET(relativePath string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(ByAuthorityOfDataOwner, "GET", relativePath)
 	m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
 	return newDataOwnerEndpoint(e)
 }
 
-func (m *DataOwnerHttpMethods) POST(relativePath, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "POST", relativePath)
+func (m *DataOwnerHttpMethods) POST(relativePath string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(ByAuthorityOfDataOwner, "POST", relativePath)
 	m.RouterGroup.POST(relativePath, handlerFuncs(e, handlers)...)
 	return newDataOwnerEndpoint(e)
 }
 
-func (m *DataOwnerHttpMethods) PUT(relativePath, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "PUT", relativePath)
+func (m *DataOwnerHttpMethods) PUT(relativePath string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(ByAuthorityOfDataOwner, "PUT", relativePath)
 	m.RouterGroup.PUT(relativePath, handlerFuncs(e, handlers)...)
 	return newDataOwnerEndpoint(e)
 }
 
-func (m *DataOwnerHttpMethods) PATCH(relativePath, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "PATCH", relativePath)
+func (m *DataOwnerHttpMethods) PATCH(relativePath string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(ByAuthorityOfDataOwner, "PATCH", relativePath)
 	m.RouterGroup.PATCH(relativePath, handlerFuncs(e, handlers)...)
 	return newDataOwnerEndpoint(e)
 }
 
-func (m *DataOwnerHttpMethods) DELETE(relativePath, identifier string, handlers ...HandlerFunc) *DataOwnerEndpoint {
-	e := m.addEndpoint(identifier, ByAuthorityOfDataOwner, "DELETE", relativePath)
+func (m *DataOwnerHttpMethods) DELETE(relativePath string, handlers ...HandlerFunc) *DataOwnerEndpoint {
+	e := m.addEndpoint(ByAuthorityOfDataOwner, "DELETE", relativePath)
 	m.RouterGroup.DELETE(relativePath, handlerFuncs(e, handlers)...)
 	return newDataOwnerEndpoint(e)
 }

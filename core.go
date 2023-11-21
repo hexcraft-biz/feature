@@ -2,6 +2,7 @@ package feature
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -37,19 +38,33 @@ func New(e *gin.Engine, featurePath string, d *Dogmas) *Feature {
 	}
 }
 
-func (f *Feature) addEndpoint(identifier, byAuthorityOf, method, relativePath string) *Endpoint {
+func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string) *Endpoint {
+	urlPath := GetAuthorizedEndpointPath(relativePath)
+	u, err := url.Parse(path.Join(f.Dogmas.AppHost, f.FeaturePath, urlPath))
+	if err != nil {
+		panic("Invalid endpoint")
+	}
 	e := &Endpoint{
 		Dogmas:             f.Dogmas,
-		EndpointIdentifier: identifier,
+		EndpointIdentifier: fmt.Sprintf("%x", md5.Sum([]byte(method+u.String()))),
 		ByAuthorityOf:      byAuthorityOf,
 		Method:             method,
 		UrlHost:            &f.Dogmas.AppHost,
 		UrlFeature:         &f.FeaturePath,
-		UrlPath:            GetAuthorizedEndpointPath(relativePath),
+		UrlPath:            urlPath,
 	}
 
 	f.Dogmas.Endpoints = append(f.Dogmas.Endpoints, e)
 	return e
+}
+
+func EndpointIdentifier(method, appHost, urlFeature, urlPath string) string {
+	urlPath = GetAuthorizedEndpointPath(urlPath)
+	u, err := url.Parse(path.Join(appHost, urlFeature, urlPath))
+	if err != nil {
+		panic("Invalid endpoint")
+	}
+	return fmt.Sprintf("%x", md5.Sum([]byte(method+u.String())))
 }
 
 type HandlerFunc func(*Endpoint) gin.HandlerFunc
