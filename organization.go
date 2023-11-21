@@ -120,27 +120,27 @@ const (
 
 type organizationUserAccess struct {
 	DogmasApiUrl        *url.URL
-	EndpointIdentifier  *Md5Identifier
+	EndpointId          *Md5Identifier
 	accessRulesToCommit map[int]map[Md5Identifier]*EndpointAccessRules
 }
 
 func (e *OrganizationEndpoint) ManageAccessFor(userId xuuid.UUID) *organizationUserAccess {
 	return &organizationUserAccess{
 		DogmasApiUrl:        e.Dogmas.HostUrl.JoinPath("/permissions/v1/users", userId.String()),
-		EndpointIdentifier:  &e.EndpointIdentifier,
+		EndpointId:          &e.EndpointId,
 		accessRulesToCommit: map[int]map[Md5Identifier]*EndpointAccessRules{},
 	}
 }
 
 type targetEndpointAccessRules struct {
 	*organizationUserAccess
-	endpointIdentifier Md5Identifier
+	endpointId Md5Identifier
 }
 
 func (u *organizationUserAccess) TargetEndpoint(method, appHost, urlFeature, urlPath string) *targetEndpointAccessRules {
 	return &targetEndpointAccessRules{
 		organizationUserAccess: u,
-		endpointIdentifier:     EndpointIdentifier(method, appHost, urlFeature, urlPath),
+		endpointId:             GetEndpointId(method, appHost, urlFeature, urlPath),
 	}
 }
 
@@ -169,34 +169,34 @@ func (u *targetEndpointAccessRules) addAction(action int, rule string) *targetEn
 		u.accessRulesToCommit[behavior] = map[Md5Identifier]*EndpointAccessRules{}
 	}
 
-	if _, ok := u.accessRulesToCommit[behavior][u.endpointIdentifier]; !ok {
-		u.accessRulesToCommit[behavior][u.endpointIdentifier] = &EndpointAccessRules{}
+	if _, ok := u.accessRulesToCommit[behavior][u.endpointId]; !ok {
+		u.accessRulesToCommit[behavior][u.endpointId] = &EndpointAccessRules{}
 	}
 
 	switch action {
 	case ActionAssign, ActionGrant:
-		u.accessRulesToCommit[behavior][u.endpointIdentifier].AddSubset(rule)
+		u.accessRulesToCommit[behavior][u.endpointId].AddSubset(rule)
 	case ActionRevoke:
-		u.accessRulesToCommit[behavior][u.endpointIdentifier].AddException(rule)
+		u.accessRulesToCommit[behavior][u.endpointId].AddException(rule)
 	}
 
 	return u
 }
 
 type EndpointAccessRulesWithBehavior struct {
-	Behavior           string               `json:"behavior" db:"-" binding:"required"`
-	EndpointIdentifier Md5Identifier        `json:"endpointIdentifier" db:"endpoint_identifier" binding:"required"`
-	AccessRules        *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
+	Behavior    string               `json:"behavior" db:"-" binding:"required"`
+	EndpointId  Md5Identifier        `json:"endpointId" db:"endpoint_id" binding:"required"`
+	AccessRules *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
 }
 
 const (
-	HeaderEndpointIdentiifer = "X-Endpoint-Identifier"
-	HeaderByUserId           = "X-By-User-Id"
+	HeaderEndpointId = "X-Endpoint-Id"
+	HeaderByUserId   = "X-By-User-Id"
 )
 
 func (u *organizationUserAccess) Commit(byUserId xuuid.UUID) her.Error {
 	rulesWithBehavior := []*EndpointAccessRulesWithBehavior{}
-	for behavior, identifiers := range u.accessRulesToCommit {
+	for behavior, idAccessRules := range u.accessRulesToCommit {
 
 		behaviorstring := ""
 		switch behavior {
@@ -208,12 +208,12 @@ func (u *organizationUserAccess) Commit(byUserId xuuid.UUID) her.Error {
 			return her.NewErrorWithMessage(http.StatusInternalServerError, "Undefined write behavior", nil)
 		}
 
-		for identifier, accessRules := range identifiers {
+		for id, accessRules := range idAccessRules {
 			accessRules.RemoveRedundant()
 			rulesWithBehavior = append(rulesWithBehavior, &EndpointAccessRulesWithBehavior{
-				Behavior:           behaviorstring,
-				EndpointIdentifier: identifier,
-				AccessRules:        accessRules,
+				Behavior:    behaviorstring,
+				EndpointId:  id,
+				AccessRules: accessRules,
 			})
 		}
 	}
@@ -229,7 +229,7 @@ func (u *organizationUserAccess) Commit(byUserId xuuid.UUID) her.Error {
 			return her.NewError(http.StatusInternalServerError, err, nil)
 		}
 
-		req.Header.Set(HeaderEndpointIdentiifer, string(*u.EndpointIdentifier))
+		req.Header.Set(HeaderEndpointId, string(*u.EndpointId))
 		req.Header.Set(HeaderByUserId, byUserId.String())
 
 		payload := her.NewPayload(nil)

@@ -47,20 +47,20 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string) *Endpo
 		panic("Invalid endpoint")
 	}
 	e := &Endpoint{
-		Dogmas:             f.Dogmas,
-		EndpointIdentifier: Md5Identifier(fmt.Sprintf("%x", md5.Sum([]byte(method+u.String())))),
-		ByAuthorityOf:      byAuthorityOf,
-		Method:             method,
-		UrlHost:            &f.Dogmas.AppHost,
-		UrlFeature:         &f.FeaturePath,
-		UrlPath:            urlPath,
+		Dogmas:        f.Dogmas,
+		EndpointId:    Md5Identifier(fmt.Sprintf("%x", md5.Sum([]byte(method+u.String())))),
+		ByAuthorityOf: byAuthorityOf,
+		Method:        method,
+		UrlHost:       &f.Dogmas.AppHost,
+		UrlFeature:    &f.FeaturePath,
+		UrlPath:       urlPath,
 	}
 
 	f.Dogmas.Endpoints = append(f.Dogmas.Endpoints, e)
 	return e
 }
 
-func EndpointIdentifier(method, appHost, urlFeature, urlPath string) Md5Identifier {
+func GetEndpointId(method, appHost, urlFeature, urlPath string) Md5Identifier {
 	urlPath = GetAuthorizedEndpointPath(urlPath)
 	u, err := url.Parse(path.Join(appHost, urlFeature, urlPath))
 	if err != nil {
@@ -80,13 +80,13 @@ func handlerFuncs(e *Endpoint, handlers []HandlerFunc) []gin.HandlerFunc {
 }
 
 type Endpoint struct {
-	*Dogmas            `json:"-"`
-	EndpointIdentifier Md5Identifier `json:"endpointIdentifier"`
-	ByAuthorityOf      string        `json:"byAuthorityOf"`
-	Method             string        `json:"method"`
-	UrlHost            *string       `json:"urlHost"`
-	UrlFeature         *string       `json:"urlFeature"`
-	UrlPath            string        `json:"urlPath"`
+	*Dogmas       `json:"-"`
+	EndpointId    Md5Identifier `json:"endpointId"`
+	ByAuthorityOf string        `json:"byAuthorityOf"`
+	Method        string        `json:"method"`
+	UrlHost       *string       `json:"urlHost"`
+	UrlFeature    *string       `json:"urlFeature"`
+	UrlPath       string        `json:"urlPath"`
 }
 
 // ================================================================
