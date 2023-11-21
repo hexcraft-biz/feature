@@ -121,20 +121,20 @@ const (
 type organizationUserAccess struct {
 	DogmasApiUrl        *url.URL
 	EndpointIdentifier  *Md5Identifier
-	accessRulesToCommit map[int]map[string]*EndpointAccessRules
+	accessRulesToCommit map[int]map[Md5Identifier]*EndpointAccessRules
 }
 
 func (e *OrganizationEndpoint) ManageAccessFor(userId xuuid.UUID) *organizationUserAccess {
 	return &organizationUserAccess{
 		DogmasApiUrl:        e.Dogmas.HostUrl.JoinPath("/permissions/v1/users", userId.String()),
 		EndpointIdentifier:  &e.EndpointIdentifier,
-		accessRulesToCommit: map[int]map[string]*EndpointAccessRules{},
+		accessRulesToCommit: map[int]map[Md5Identifier]*EndpointAccessRules{},
 	}
 }
 
 type targetEndpointAccessRules struct {
 	*organizationUserAccess
-	endpointIdentifier string
+	endpointIdentifier Md5Identifier
 }
 
 func (u *organizationUserAccess) TargetEndpoint(method, appHost, urlFeature, urlPath string) *targetEndpointAccessRules {
@@ -166,7 +166,7 @@ func (u *targetEndpointAccessRules) addAction(action int, rule string) *targetEn
 	}
 
 	if _, ok := u.accessRulesToCommit[behavior]; !ok {
-		u.accessRulesToCommit[behavior] = map[string]*EndpointAccessRules{}
+		u.accessRulesToCommit[behavior] = map[Md5Identifier]*EndpointAccessRules{}
 	}
 
 	if _, ok := u.accessRulesToCommit[behavior][u.endpointIdentifier]; !ok {
@@ -185,7 +185,7 @@ func (u *targetEndpointAccessRules) addAction(action int, rule string) *targetEn
 
 type EndpointAccessRulesWithBehavior struct {
 	Behavior           string               `json:"behavior" db:"-" binding:"required"`
-	EndpointIdentifier string               `json:"endpointIdentifier" db:"endpoint_identifier" binding:"required"`
+	EndpointIdentifier Md5Identifier        `json:"endpointIdentifier" db:"endpoint_identifier" binding:"required"`
 	AccessRules        *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
 }
 

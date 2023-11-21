@@ -60,13 +60,13 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string) *Endpo
 	return e
 }
 
-func EndpointIdentifier(method, appHost, urlFeature, urlPath string) string {
+func EndpointIdentifier(method, appHost, urlFeature, urlPath string) Md5Identifier {
 	urlPath = GetAuthorizedEndpointPath(urlPath)
 	u, err := url.Parse(path.Join(appHost, urlFeature, urlPath))
 	if err != nil {
 		panic("Invalid endpoint")
 	}
-	return fmt.Sprintf("%x", md5.Sum([]byte(method+u.String())))
+	return Md5Identifier(fmt.Sprintf("%x", md5.Sum([]byte(method+u.String()))))
 }
 
 type HandlerFunc func(*Endpoint) gin.HandlerFunc
