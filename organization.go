@@ -7,6 +7,8 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 
 	"github.com/hexcraft-biz/her"
 	"github.com/hexcraft-biz/xuuid"
@@ -105,6 +107,44 @@ func (r *EndpointAccessRules) Merge(rules *EndpointAccessRules) {
 	r.RemoveRedundant()
 }
 
+func (r EndpointAccessRules) CanAccess(urlPath string) bool {
+	if isCovered(urlPath, r.Subsets) {
+		if isCovered(urlPath, r.Exceptions) {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func isCovered(scope string, scopes []string) bool {
+	if scopes == nil {
+		return false
+	}
+
+	var patterns []*regexp.Regexp
+
+	for _, key := range scopes {
+		if strings.Contains(key, "*") {
+			pattern := strings.ReplaceAll(key, "*", ".*")
+			if re, err := regexp.Compile("^" + pattern + "$"); err == nil {
+				patterns = append(patterns, re)
+			}
+		}
+	}
+
+	return isCoveredBy(scope, patterns)
+}
+
+func isCoveredBy(key string, patterns []*regexp.Regexp) bool {
+	for _, pattern := range patterns {
+		if pattern.MatchString(key) {
+			return true
+		}
+	}
+	return false
+}
+
 // ================================================================
 const (
 	ActionAssign = iota
@@ -140,7 +180,7 @@ type targetEndpointAccessRules struct {
 func (u *organizationUserAccess) TargetEndpoint(method, appHost, urlFeature, urlPath string) *targetEndpointAccessRules {
 	return &targetEndpointAccessRules{
 		organizationUserAccess: u,
-		endpointId:             GetEndpointId(method, appHost, urlFeature, urlPath),
+		endpointId:             getEndpointId(method, appHost, urlFeature, urlPath),
 	}
 }
 

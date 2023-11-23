@@ -60,13 +60,38 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string) *Endpo
 	return e
 }
 
-func GetEndpointId(method, appHost, urlFeature, urlPath string) Md5Identifier {
+func getEndpointId(method, appHost, urlFeature, urlPath string) Md5Identifier {
 	urlPath = GetAuthorizedEndpointPath(urlPath)
-	u, err := url.Parse(path.Join(appHost, urlFeature, urlPath))
+	u, err := url.ParseRequestURI(path.Join(appHost, urlFeature, urlPath))
 	if err != nil {
 		panic("Invalid endpoint")
 	}
-	return Md5Identifier(fmt.Sprintf("%x", md5.Sum([]byte(method+u.String()))))
+	md5bytes := md5.Sum([]byte(method + u.String()))
+	return Md5Identifier(fmt.Sprintf("%x", md5bytes))
+}
+
+func GetEndpointIdFromRequestUrl(method, appHost, urlFeature, urlPath string) Md5Identifier {
+	segs := strings.Split(urlPath, "/")
+	for i := range segs {
+		if i > 0 && i%2 == 0 {
+			segs[i] = "*"
+		}
+	}
+
+	urlPath = strings.Join(segs, "/")
+	md5bytes := md5.Sum([]byte(method + appHost + urlFeature + urlPath))
+	return Md5Identifier(fmt.Sprintf("%x", md5bytes))
+}
+
+func ExtractPathSegments(s string) (string, string, error) {
+	re := regexp.MustCompile(`/v[0-9]+`)
+	loc := re.FindStringIndex(s)
+
+	if loc == nil {
+		return "", "", fmt.Errorf("Invalid endpoint")
+	}
+
+	return s[0:loc[1]], s[loc[1]:], nil
 }
 
 type HandlerFunc func(*Endpoint) gin.HandlerFunc
@@ -204,34 +229,6 @@ func RemoveRedundant(scopes []string) []string {
 func isCoveredByMoreGeneralPattern(key string, patterns []*regexp.Regexp) bool {
 	for _, pattern := range patterns {
 		if pattern.MatchString(key) && pattern.String() != "^"+strings.ReplaceAll(key, "*", ".*")+"$" {
-			return true
-		}
-	}
-	return false
-}
-
-// ================================================================
-func IsCovered(scope string, scopes []string) bool {
-	var patterns []*regexp.Regexp
-
-	for _, key := range scopes {
-		if strings.Contains(key, "*") {
-			pattern := strings.ReplaceAll(key, "*", ".*")
-			re, err := regexp.Compile("^" + pattern + "$")
-			if err != nil {
-				fmt.Println("Regex compile error:", err)
-				continue
-			}
-			patterns = append(patterns, re)
-		}
-	}
-
-	return isCoveredBy(scope, patterns)
-}
-
-func isCoveredBy(key string, patterns []*regexp.Regexp) bool {
-	for _, pattern := range patterns {
-		if pattern.MatchString(key) {
 			return true
 		}
 	}
