@@ -9,7 +9,12 @@ import (
 	"github.com/hexcraft-biz/her"
 )
 
-type endpoints map[Md5Identifier]*Endpoint
+type endpointsMap map[Md5Identifier]*Endpoint
+
+type Scope struct {
+	Identifier  string `json:"identifier"`
+	Description string `json:"description"`
+}
 
 type scopesHandler struct {
 	apiUrl string
@@ -17,13 +22,8 @@ type scopesHandler struct {
 }
 
 type scopeWithEndpoints struct {
-	*scope
-	endpoints
-}
-
-type scope struct {
-	identifier  string `json:"identifier"`
-	description string `json:"description"`
+	*Scope
+	endpointsMap
 }
 
 func newScopesHandler(dogmasHost *url.URL) *scopesHandler {
@@ -31,20 +31,22 @@ func newScopesHandler(dogmasHost *url.URL) *scopesHandler {
 		apiUrl: dogmasHost.JoinPath("/resources/v1/scopes").String(),
 		scopes: map[string]*scopeWithEndpoints{
 			"": &scopeWithEndpoints{
-				scope:     nil,
-				endpoints: endpoints{},
+				Scope:        nil,
+				endpointsMap: endpointsMap{},
 			},
 		},
 	}
 }
 
 func (h *scopesHandler) AddScope(identifier, description string) {
-	h.scopes[identifier] = &scopeWithEndpoints{
-		scope: &scope{
-			identifier:  identifier,
-			description: description,
-		},
-		endpoints: endpoints{},
+	if _, ok := h.scopes[identifier]; !ok {
+		h.scopes[identifier] = &scopeWithEndpoints{
+			Scope: &Scope{
+				Identifier:  identifier,
+				Description: description,
+			},
+			endpointsMap: endpointsMap{},
+		}
 	}
 }
 
@@ -57,8 +59,8 @@ func (h scopesHandler) endpointsContainer(identifier string) *scopeWithEndpoints
 }
 
 type registerScope struct {
-	*scope
-	endpoints []*Endpoint `json:"endpoints"`
+	*Scope
+	Endpoints []*Endpoint `json:"endpoints"`
 }
 
 func (h scopesHandler) register() {
@@ -66,12 +68,12 @@ func (h scopesHandler) register() {
 
 	for _, se := range h.scopes {
 		scope := &registerScope{
-			scope:     se.scope,
-			endpoints: []*Endpoint{},
+			Scope:     se.Scope,
+			Endpoints: []*Endpoint{},
 		}
 		scopes = append(scopes, scope)
-		for _, e := range se.endpoints {
-			scope.endpoints = append(scope.endpoints, e)
+		for _, e := range se.endpointsMap {
+			scope.Endpoints = append(scope.Endpoints, e)
 		}
 	}
 
@@ -100,6 +102,6 @@ func (h scopesHandler) register() {
 }
 
 func (se *scopeWithEndpoints) addEndpoint(e *Endpoint) *scopeWithEndpoints {
-	se.endpoints[e.EndpointId] = e
+	se.endpointsMap[e.EndpointId] = e
 	return se
 }
