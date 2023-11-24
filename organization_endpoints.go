@@ -27,12 +27,6 @@ func newOrganizationEndpoint(e *Endpoint) *OrganizationEndpoint {
 	}
 }
 
-func (f *Feature) ByAuthorityOfOrganization() *OrganizationHttpMethods {
-	return &OrganizationHttpMethods{
-		Feature: f,
-	}
-}
-
 func (m *OrganizationHttpMethods) GET(relativePath string, scopes []string, handlers ...HandlerFunc) *OrganizationEndpoint {
 	e := m.addEndpoint(ByAuthorityOfOrganization, "GET", relativePath, scopes)
 	m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
@@ -90,16 +84,16 @@ type organizationEndpointPermission struct {
 	accessRulesToCommit map[int]map[Md5Identifier]*EndpointAccessRules
 }
 
-func (u *organizationEndpointPermission) AffectedEndpoint(method, endpointId Md5Identifier) *affectedEndpointAccessRules {
+func (u *organizationEndpointPermission) AffectedEndpoint(affectedEndpointId Md5Identifier) *affectedEndpointAccessRules {
 	return &affectedEndpointAccessRules{
 		organizationEndpointPermission: u,
-		endpointId:                     endpointId,
+		affectedEndpointId:             affectedEndpointId,
 	}
 }
 
 type affectedEndpointAccessRules struct {
 	*organizationEndpointPermission
-	endpointId Md5Identifier
+	affectedEndpointId Md5Identifier
 }
 
 func (u *affectedEndpointAccessRules) Assign(rule string) *affectedEndpointAccessRules {
@@ -127,24 +121,24 @@ func (u *affectedEndpointAccessRules) addAction(action int, rule string) *affect
 		u.accessRulesToCommit[behavior] = map[Md5Identifier]*EndpointAccessRules{}
 	}
 
-	if _, ok := u.accessRulesToCommit[behavior][u.endpointId]; !ok {
-		u.accessRulesToCommit[behavior][u.endpointId] = &EndpointAccessRules{}
+	if _, ok := u.accessRulesToCommit[behavior][u.affectedEndpointId]; !ok {
+		u.accessRulesToCommit[behavior][u.affectedEndpointId] = &EndpointAccessRules{}
 	}
 
 	switch action {
 	case ActionAssign, ActionGrant:
-		u.accessRulesToCommit[behavior][u.endpointId].AddSubset(rule)
+		u.accessRulesToCommit[behavior][u.affectedEndpointId].AddSubset(rule)
 	case ActionRevoke:
-		u.accessRulesToCommit[behavior][u.endpointId].AddException(rule)
+		u.accessRulesToCommit[behavior][u.affectedEndpointId].AddException(rule)
 	}
 
 	return u
 }
 
 type EndpointAccessRulesWithBehavior struct {
-	Behavior    string               `json:"behavior" db:"-" binding:"required"`
-	EndpointId  Md5Identifier        `json:"endpointId" db:"endpoint_id" binding:"required"`
-	AccessRules *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
+	Behavior           string               `json:"behavior" db:"-" binding:"required"`
+	AffectedEndpointId Md5Identifier        `json:"affectedEndpointId" db:"endpoint_id" binding:"required"`
+	AccessRules        *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
 }
 
 const (
@@ -169,9 +163,9 @@ func (u *organizationEndpointPermission) Commit(byUserId xuuid.UUID) her.Error {
 		for id, accessRules := range idAccessRules {
 			accessRules.RemoveRedundant()
 			rulesWithBehavior = append(rulesWithBehavior, &EndpointAccessRulesWithBehavior{
-				Behavior:    behaviorstring,
-				EndpointId:  id,
-				AccessRules: accessRules,
+				Behavior:           behaviorstring,
+				AffectedEndpointId: id,
+				AccessRules:        accessRules,
 			})
 		}
 	}

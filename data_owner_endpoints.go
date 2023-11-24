@@ -17,12 +17,6 @@ func newDataOwnerEndpoint(e *Endpoint) *DataOwnerEndpoint {
 	}
 }
 
-func (f *Feature) ByAuthorityOfDataOwner() *DataOwnerHttpMethods {
-	return &DataOwnerHttpMethods{
-		Feature: f,
-	}
-}
-
 func (m *DataOwnerHttpMethods) GET(relativePath string, scopes []string, handlers ...HandlerFunc) *DataOwnerEndpoint {
 	e := m.addEndpoint(ByAuthorityOfDataOwner, "GET", relativePath, scopes)
 	m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)

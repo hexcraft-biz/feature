@@ -17,12 +17,6 @@ func newPublicEndpoint(e *Endpoint) *PublicEndpoint {
 	}
 }
 
-func (f *Feature) ByAuthorityOfNone() *PublicHttpMethods {
-	return &PublicHttpMethods{
-		Feature: f,
-	}
-}
-
 func (m *PublicHttpMethods) GET(relativePath string, scopes []string, handlers ...HandlerFunc) *PublicEndpoint {
 	e := m.addEndpoint(ByAuthorityOfNone, "GET", relativePath, scopes)
 	m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)

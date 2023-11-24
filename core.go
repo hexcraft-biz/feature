@@ -55,6 +55,24 @@ func New(e *gin.Engine, featurePath string, d *Dogmas) *Feature {
 	}
 }
 
+func (f *Feature) ByAuthorityOfOrganization() *OrganizationHttpMethods {
+	return &OrganizationHttpMethods{
+		Feature: f,
+	}
+}
+
+func (f *Feature) ByAuthorityOfDataOwner() *DataOwnerHttpMethods {
+	return &DataOwnerHttpMethods{
+		Feature: f,
+	}
+}
+
+func (f *Feature) ByAuthorityOfNone() *PublicHttpMethods {
+	return &PublicHttpMethods{
+		Feature: f,
+	}
+}
+
 func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string, scopes []string) *Endpoint {
 	segs := strings.Split(path.Join("/", relativePath), "/")
 	for i := range segs {
@@ -193,6 +211,11 @@ func ToEndpointIdWithPath(method, endpointUrl string) (Md5Identifier, string, er
 
 	md5bytes := md5.Sum([]byte(method + urlstring))
 	return Md5Identifier(fmt.Sprintf("%x", md5bytes)), urlPath, nil
+}
+
+func ToEndpointId(method, endpointUrl string) (Md5Identifier, error) {
+	endpointId, _, err := ToEndpointIdWithPath(method, endpointUrl)
+	return endpointId, err
 }
 
 func extractPathSegments(s string) (string, string, error) {
