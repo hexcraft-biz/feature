@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -78,8 +79,12 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string, scopes
 		UrlPath:       relativePath,
 	}
 
-	for _, identifier := range scopes {
-		f.Dogmas.endpointsContainer(identifier).addEndpoint(e)
+	if len(scopes) > 0 {
+		for _, identifier := range scopes {
+			f.Dogmas.endpointsContainer(identifier).addEndpoint(e)
+		}
+	} else {
+		f.Dogmas.endpointsContainer("").addEndpoint(e)
 	}
 
 	return e
@@ -88,7 +93,13 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string, scopes
 // ================================================================
 //
 // ================================================================
+const (
+	FlagInit            = "initdogmas"
+	FlagInitDescription = "To register scopes and endpoints on dogmas"
+)
+
 type Dogmas struct {
+	init    *bool
 	HostUrl *url.URL
 	AppHost string
 	*scopesHandler
@@ -101,10 +112,22 @@ func NewDogmas(appHostUrl *url.URL) (*Dogmas, error) {
 	}
 
 	return &Dogmas{
+		init:          flag.Bool(FlagInit, false, FlagInitDescription),
 		HostUrl:       u,
 		AppHost:       appHostUrl.String(),
 		scopesHandler: newScopesHandler(u),
 	}, nil
+}
+
+func (d Dogmas) IsInit() bool {
+	return *d.init
+}
+
+func (d Dogmas) Register() {
+	if !*d.init {
+		panic("not init mode")
+	}
+	d.scopesHandler.register()
 }
 
 func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *xuuid.UUID) her.Error {

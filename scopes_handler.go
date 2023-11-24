@@ -61,7 +61,7 @@ type registerScope struct {
 	endpoints []*Endpoint `json:"endpoints"`
 }
 
-func (h scopesHandler) Register() {
+func (h scopesHandler) register() {
 	scopes := []*registerScope{}
 
 	for _, se := range h.scopes {
