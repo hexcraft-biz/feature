@@ -42,8 +42,15 @@ func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset string) her.Error {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
 		return err
-	} else if resp.StatusCode != http.StatusOK {
-		return her.NewErrorWithMessage(http.StatusForbidden, "Dogmas: "+payload.Message, nil)
+	} else {
+		switch resp.StatusCode {
+		case http.StatusOK:
+			return nil
+		case http.StatusForbidden:
+			return her.ErrForbidden
+		default:
+			return her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
+		}
 	}
 
 	return nil
