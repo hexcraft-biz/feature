@@ -2,7 +2,6 @@ package feature
 
 import (
 	"reflect"
-	"strings"
 )
 
 // ================================================================
@@ -13,11 +12,13 @@ const (
 type Identifiers map[string]bool
 
 func NewIdentifiers(input any) Identifiers {
-	items := []string{}
-	if reflect.TypeOf(input).Kind() == reflect.Slice {
-		items = input.([]string)
-	} else {
-		items = strings.Split(input.(string), Delimiter)
+	if reflect.TypeOf(input).Kind() != reflect.Slice {
+		return nil
+	}
+
+	items, ok := input.([]string)
+	if !ok {
+		return nil
 	}
 
 	identifiers := Identifiers{}
