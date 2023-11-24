@@ -132,7 +132,7 @@ const (
 	HeaderByUserId   = "X-By-User-Id"
 )
 
-func (u *organizationEndpointPermission) Commit(byUserId xuuid.UUID) her.Error {
+func (u organizationEndpointPermission) Commit(byUserId xuuid.UUID) her.Error {
 	rulesWithBehavior := []*EndpointAccessRulesWithBehavior{}
 	for behavior, idAccessRules := range u.accessRulesToCommit {
 
