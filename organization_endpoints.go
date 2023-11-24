@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/gin-gonic/gin"
 	"github.com/hexcraft-biz/her"
 	"github.com/hexcraft-biz/xuuid"
 )
@@ -17,44 +18,29 @@ type OrganizationHttpMethods struct {
 	*Feature
 }
 
-type OrganizationEndpoint struct {
-	*Endpoint
-}
-
-func newOrganizationEndpoint(e *Endpoint) *OrganizationEndpoint {
-	return &OrganizationEndpoint{
-		Endpoint: e,
-	}
-}
-
-func (m *OrganizationHttpMethods) GET(relativePath string, scopes []string, handlers ...HandlerFunc) *OrganizationEndpoint {
+func (m *OrganizationHttpMethods) GET(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
 	e := m.addEndpoint(ByAuthorityOfOrganization, "GET", relativePath, scopes)
-	m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
-	return newOrganizationEndpoint(e)
+	return m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *OrganizationHttpMethods) POST(relativePath string, scopes []string, handlers ...HandlerFunc) *OrganizationEndpoint {
+func (m *OrganizationHttpMethods) POST(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
 	e := m.addEndpoint(ByAuthorityOfOrganization, "POST", relativePath, scopes)
-	m.RouterGroup.POST(relativePath, handlerFuncs(e, handlers)...)
-	return newOrganizationEndpoint(e)
+	return m.RouterGroup.POST(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *OrganizationHttpMethods) PUT(relativePath string, scopes []string, handlers ...HandlerFunc) *OrganizationEndpoint {
+func (m *OrganizationHttpMethods) PUT(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
 	e := m.addEndpoint(ByAuthorityOfOrganization, "PUT", relativePath, scopes)
-	m.RouterGroup.PUT(relativePath, handlerFuncs(e, handlers)...)
-	return newOrganizationEndpoint(e)
+	return m.RouterGroup.PUT(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *OrganizationHttpMethods) PATCH(relativePath string, scopes []string, handlers ...HandlerFunc) *OrganizationEndpoint {
+func (m *OrganizationHttpMethods) PATCH(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
 	e := m.addEndpoint(ByAuthorityOfOrganization, "PATCH", relativePath, scopes)
-	m.RouterGroup.PATCH(relativePath, handlerFuncs(e, handlers)...)
-	return newOrganizationEndpoint(e)
+	return m.RouterGroup.PATCH(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *OrganizationHttpMethods) DELETE(relativePath string, scopes []string, handlers ...HandlerFunc) *OrganizationEndpoint {
+func (m *OrganizationHttpMethods) DELETE(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
 	e := m.addEndpoint(ByAuthorityOfOrganization, "DELETE", relativePath, scopes)
-	m.RouterGroup.DELETE(relativePath, handlerFuncs(e, handlers)...)
-	return newOrganizationEndpoint(e)
+	return m.RouterGroup.DELETE(relativePath, handlerFuncs(e, handlers)...)
 }
 
 // ================================================================
@@ -70,7 +56,7 @@ const (
 	writeBehaviorOverwrite
 )
 
-func (e *OrganizationEndpoint) SetAccessRulesFor(userId xuuid.UUID) *organizationEndpointPermission {
+func (e *Endpoint) SetEndpointAccessRulesFor(userId xuuid.UUID) *organizationEndpointPermission {
 	return &organizationEndpointPermission{
 		dogmasApiUrl:        e.Dogmas.HostUrl.JoinPath("/permissions/v1/users", userId.String()),
 		EndpointId:          &e.EndpointId,
