@@ -152,9 +152,9 @@ type ResultAccessPermission struct {
 	CanAccess bool `json:"canAccess"`
 }
 
-func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *xuuid.UUID) her.Error {
+func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *xuuid.UUID) (bool, her.Error) {
 	if len(scopes) < 1 {
-		return her.ErrForbidden
+		return false, her.ErrForbidden
 	}
 
 	data := map[string]any{
@@ -168,36 +168,31 @@ func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *x
 
 	jsonbytes, err := json.Marshal(data)
 	if err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
+		return false, her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
 	req, err := http.NewRequest("POST", d.HostUrl.JoinPath("/permissions/v1/proxy").String(), bytes.NewReader(jsonbytes))
 	if err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
+		return false, her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
 	result := new(ResultAccessPermission)
 	payload := her.NewPayload(result)
 	client := &http.Client{}
 
-	if resp, err := client.Do(req); err != nil {
-		return her.NewError(http.StatusInternalServerError, err, nil)
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, her.NewError(http.StatusInternalServerError, err, nil)
 	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
-		return err
-	} else {
-		switch resp.StatusCode {
-		case http.StatusOK:
-			if result.CanAccess {
-				return nil
-			} else {
-				return her.ErrForbidden
-			}
-		default:
-			return her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
-		}
+		return false, err
 	}
 
-	return nil
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return result.CanAccess, nil
+	default:
+		return false, her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
+	}
 }
 
 // ================================================================
