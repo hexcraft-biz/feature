@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/url"
 	"path"
 
 	"github.com/hexcraft-biz/her"
@@ -21,10 +20,10 @@ type Endpoint struct {
 	UrlPath       string        `json:"urlPath"`
 }
 
-func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset *url.URL) her.Error {
+func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset string) her.Error {
 	jsonbytes, err := json.Marshal(map[string]string{
 		"method":             e.Method,
-		"requestEndpointUrl": *e.UrlHost + path.Join("/", *e.UrlFeature, subset.String()),
+		"requestEndpointUrl": *e.UrlHost + path.Join("/", *e.UrlFeature, subset),
 		"userId":             userId.String(),
 	})
 	if err != nil {
