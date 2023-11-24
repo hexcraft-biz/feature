@@ -148,6 +148,10 @@ func (d Dogmas) Register() {
 	d.scopesHandler.register()
 }
 
+type ResultAccessPermission struct {
+	CanAccess bool `json:"canAccess"`
+}
+
 func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *xuuid.UUID) her.Error {
 	if len(scopes) < 1 {
 		return her.ErrForbidden
@@ -172,7 +176,8 @@ func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *x
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
-	payload := her.NewPayload(nil)
+	result := new(ResultAccessPermission)
+	payload := her.NewPayload(result)
 	client := &http.Client{}
 
 	if resp, err := client.Do(req); err != nil {
@@ -182,9 +187,11 @@ func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *x
 	} else {
 		switch resp.StatusCode {
 		case http.StatusOK:
-			return nil
-		case http.StatusForbidden:
-			return her.ErrForbidden
+			if result.CanAccess {
+				return nil
+			} else {
+				return her.ErrForbidden
+			}
 		default:
 			return her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
 		}

@@ -35,7 +35,8 @@ func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset string) her.Error {
 		return her.NewError(http.StatusInternalServerError, err, nil)
 	}
 
-	payload := her.NewPayload(nil)
+	result := new(ResultAccessPermission)
+	payload := her.NewPayload(result)
 	client := &http.Client{}
 
 	if resp, err := client.Do(req); err != nil {
@@ -45,9 +46,11 @@ func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset string) her.Error {
 	} else {
 		switch resp.StatusCode {
 		case http.StatusOK:
-			return nil
-		case http.StatusForbidden:
-			return her.ErrForbidden
+			if result.CanAccess {
+				return nil
+			} else {
+				return her.ErrForbidden
+			}
 		default:
 			return her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
 		}
