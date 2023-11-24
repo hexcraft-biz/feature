@@ -21,10 +21,10 @@ type Endpoint struct {
 	UrlPath       string        `json:"urlPath"`
 }
 
-func (e Endpoint) CanUserAccess(userId xuuid.UUID, subset *url.URL) her.Error {
+func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset *url.URL) her.Error {
 	jsonbytes, err := json.Marshal(map[string]string{
 		"method":             e.Method,
-		"requestEndpointUrl": path.Join(*e.UrlHost, *e.UrlFeature, subset.String()),
+		"requestEndpointUrl": *e.UrlHost + path.Join("/", *e.UrlFeature, subset.String()),
 		"userId":             userId.String(),
 	})
 	if err != nil {

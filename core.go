@@ -1,9 +1,12 @@
 package feature
 
 import (
+	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -11,6 +14,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hexcraft-biz/her"
+	"github.com/hexcraft-biz/xuuid"
 )
 
 // ================================================================
@@ -100,6 +105,44 @@ func NewDogmas(appHostUrl *url.URL) (*Dogmas, error) {
 		AppHost:       appHostUrl.String(),
 		scopesHandler: newScopesHandler(u),
 	}, nil
+}
+
+func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *xuuid.UUID) her.Error {
+	if len(scopes) < 1 {
+		return her.ErrForbidden
+	}
+
+	data := map[string]any{
+		"scopes":             scopes,
+		"method":             method,
+		"requestEndpointUrl": endpointUrl,
+	}
+	if userId != nil {
+		data["userId"] = userId.String()
+	}
+
+	jsonbytes, err := json.Marshal(data)
+	if err != nil {
+		return her.NewError(http.StatusInternalServerError, err, nil)
+	}
+
+	req, err := http.NewRequest("POST", d.HostUrl.JoinPath("/permissions/v1/proxy").String(), bytes.NewReader(jsonbytes))
+	if err != nil {
+		return her.NewError(http.StatusInternalServerError, err, nil)
+	}
+
+	payload := her.NewPayload(nil)
+	client := &http.Client{}
+
+	if resp, err := client.Do(req); err != nil {
+		return her.NewError(http.StatusInternalServerError, err, nil)
+	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return her.NewErrorWithMessage(http.StatusForbidden, "Dogmas: "+payload.Message, nil)
+	}
+
+	return nil
 }
 
 // ================================================================
