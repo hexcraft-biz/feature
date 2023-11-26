@@ -9,14 +9,14 @@ const (
 	Delimiter = " "
 )
 
-type Identifiers map[string]bool
+type Identifiers map[any]bool
 
 func NewIdentifiers(input any) Identifiers {
 	if reflect.TypeOf(input).Kind() != reflect.Slice {
 		return nil
 	}
 
-	items, ok := input.([]string)
+	items, ok := input.([]any)
 	if !ok {
 		return nil
 	}
@@ -29,47 +29,15 @@ func NewIdentifiers(input any) Identifiers {
 	return identifiers
 }
 
-func (i *Identifiers) Set(item string) {
+func (i *Identifiers) Set(item any) {
 	(*i)[item] = true
-}
-
-func (i Identifiers) HasOneOf(sub Identifiers) bool {
-	for item, has := range sub {
-		if has {
-			if val, ok := i[item]; ok && val {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (i Identifiers) Contains(sub Identifiers) bool {
-	for item, has := range sub {
-		if has {
-			if val, ok := i[item]; !ok || !val {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func (i Identifiers) StringSlice() []string {
-	ss := []string{}
-	for endpoint, has := range i {
-		if has {
-			ss = append(ss, endpoint)
-		}
-	}
-	return ss
 }
 
 func (i Identifiers) AnySlice() []any {
 	ss := []any{}
-	for endpoint, has := range i {
+	for s, has := range i {
 		if has {
-			ss = append(ss, endpoint)
+			ss = append(ss, s)
 		}
 	}
 	return ss

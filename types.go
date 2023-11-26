@@ -96,7 +96,6 @@ func removeRedundant(rules []string) []string {
 			pattern := strings.ReplaceAll(key, "*", ".*")
 			re, err := regexp.Compile("^" + pattern + "$")
 			if err != nil {
-				fmt.Println("Regex compile error:", err)
 				continue
 			}
 			patterns = append(patterns, re)
@@ -135,6 +134,8 @@ func isCovered(rule string, rules []string) bool {
 			if re, err := regexp.Compile("^" + pattern + "$"); err == nil {
 				patterns = append(patterns, re)
 			}
+		} else if rule == key {
+			return true
 		}
 	}
 
