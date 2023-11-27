@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	HeaderEndpointId = "X-Endpoint-Id"
-	HeaderByUserId   = "X-By-User-Id"
+	HeaderEndpointId    = "X-Endpoint-Id"
+	HeaderByCustodianId = "X-By-Custodian-Id"
 )
 
 const (
@@ -40,7 +40,7 @@ func (u *Authorizer) AffectedEndpoint(affectedEndpointId Md5Identifier) *affecte
 	}
 }
 
-func (u Authorizer) Commit(byUserId xuuid.UUID) her.Error {
+func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
 	rulesWithBehavior := []*AccessRulesWithBehavior{}
 	for behavior, idAccessRules := range u.accessRulesToCommit {
 
@@ -76,7 +76,7 @@ func (u Authorizer) Commit(byUserId xuuid.UUID) her.Error {
 		}
 
 		req.Header.Set(HeaderEndpointId, string(*u.EndpointId))
-		req.Header.Set(HeaderByUserId, byUserId.String())
+		req.Header.Set(HeaderByCustodianId, byCustodianId.String())
 
 		payload := her.NewPayload(nil)
 		client := &http.Client{}

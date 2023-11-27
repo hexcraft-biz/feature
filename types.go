@@ -93,6 +93,12 @@ type AccessRulesWithBehavior struct {
 }
 
 // ================================================================
+type Visibilities struct {
+	Subsets    []string `json:"subsets"`
+	Exceptions []string `json:"exceptions,omitempty"`
+}
+
+// ================================================================
 func removeRedundant(rules []string) []string {
 	var patterns []*regexp.Regexp
 	result := []string{}
