@@ -86,6 +86,13 @@ func (r EndpointAccessRules) CanAccess(urlPath string) bool {
 }
 
 // ================================================================
+type AccessRulesWithBehavior struct {
+	Behavior           string               `json:"behavior" db:"-" binding:"required"`
+	AffectedEndpointId Md5Identifier        `json:"affectedEndpointId" db:"endpoint_id" binding:"required"`
+	AccessRules        *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
+}
+
+// ================================================================
 func removeRedundant(rules []string) []string {
 	var patterns []*regexp.Regexp
 	result := []string{}

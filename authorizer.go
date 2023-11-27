@@ -41,7 +41,7 @@ func (u *Authorizer) AffectedEndpoint(affectedEndpointId Md5Identifier) *affecte
 }
 
 func (u Authorizer) Commit(byUserId xuuid.UUID) her.Error {
-	rulesWithBehavior := []*accessRulesWithBehavior{}
+	rulesWithBehavior := []*AccessRulesWithBehavior{}
 	for behavior, idAccessRules := range u.accessRulesToCommit {
 
 		behaviorstring := ""
@@ -56,7 +56,7 @@ func (u Authorizer) Commit(byUserId xuuid.UUID) her.Error {
 
 		for id, accessRules := range idAccessRules {
 			accessRules.RemoveRedundant()
-			rulesWithBehavior = append(rulesWithBehavior, &accessRulesWithBehavior{
+			rulesWithBehavior = append(rulesWithBehavior, &AccessRulesWithBehavior{
 				Behavior:           behaviorstring,
 				AffectedEndpointId: id,
 				AccessRules:        accessRules,
@@ -91,12 +91,6 @@ func (u Authorizer) Commit(byUserId xuuid.UUID) her.Error {
 	}
 
 	return nil
-}
-
-type accessRulesWithBehavior struct {
-	Behavior           string               `json:"behavior" db:"-" binding:"required"`
-	AffectedEndpointId Md5Identifier        `json:"affectedEndpointId" db:"endpoint_id" binding:"required"`
-	AccessRules        *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
 }
 
 type affectedEndpointAccessRules struct {
