@@ -20,6 +20,14 @@ type Endpoint struct {
 	UrlPath       string        `json:"urlPath"`
 }
 
+func (e *Endpoint) SetAccessRulesFor(userId xuuid.UUID) *Authorizer {
+	return &Authorizer{
+		dogmasApiUrl:        e.Dogmas.HostUrl.JoinPath("/permissions/v1/users", userId.String()),
+		EndpointId:          &e.EndpointId,
+		accessRulesToCommit: map[int]map[Md5Identifier]*EndpointAccessRules{},
+	}
+}
+
 func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset string) (bool, her.Error) {
 	jsonbytes, err := json.Marshal(map[string]string{
 		"method":             e.Method,

@@ -71,7 +71,7 @@ func (r *EndpointAccessRules) RemoveRedundant() {
 
 func (r *EndpointAccessRules) Merge(rules *EndpointAccessRules) {
 	r.Subsets = append(r.Subsets, rules.Subsets...)
-	r.Exceptions = append(r.Exceptions, rules.Subsets...)
+	r.Exceptions = append(r.Exceptions, rules.Exceptions...)
 	r.RemoveRedundant()
 }
 
