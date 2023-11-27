@@ -52,8 +52,8 @@ func (r *EndpointAccessRules) Scan(value any) error {
 	return json.Unmarshal(bytes, r)
 }
 
-func (j EndpointAccessRules) Value() (driver.Value, error) {
-	return json.Marshal(j)
+func (r EndpointAccessRules) Value() (driver.Value, error) {
+	return json.Marshal(r)
 }
 
 func (r *EndpointAccessRules) AddSubset(rule string) {
@@ -86,10 +86,22 @@ func (r EndpointAccessRules) CanAccess(urlPath string) bool {
 }
 
 // ================================================================
-type AccessRulesWithBehavior struct {
-	Behavior           string               `json:"behavior" db:"-" binding:"required"`
-	AffectedEndpointId Md5Identifier        `json:"affectedEndpointId" db:"endpoint_id" binding:"required"`
-	AccessRules        *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
+type AccessRulesSettingBehavior struct {
+	Behavior    string               `json:"behavior" db:"-" binding:"required"`
+	AccessRules *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
+}
+
+func (r *AccessRulesSettingBehavior) Scan(value any) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("Type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, r)
+}
+
+func (r AccessRulesSettingBehavior) Value() (driver.Value, error) {
+	return json.Marshal(r)
 }
 
 // ================================================================
