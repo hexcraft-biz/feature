@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/hexcraft-biz/xuuid"
 )
 
@@ -111,17 +110,39 @@ func (r AccessRulesWithBehavior) Value() (driver.Value, error) {
 // ================================================================
 type SubsetString string
 
-func (s SubsetString) ExtractOwnerId(i int) (xuuid.UUID, error) {
+func (s SubsetString) ToPrivateAssetSubsetHandler(i int) (*PrivateAssetSubsetHandler, error) {
+	var err error
 	if (i <= 1) || (i%2 != 0) {
-		return xuuid.UUID(uuid.Nil), errors.New("Invalid subset segment index")
+		return nil, errors.New("Invalid subset segment index")
 	}
 
 	segs := strings.Split(string(s), "/")
 	if i >= len(segs) {
-		return xuuid.UUID(uuid.Nil), errors.New("Invalid subset segment index")
+		return nil, errors.New("Invalid subset segment index")
 	}
 
-	return xuuid.Parse(segs[i])
+	h := &PrivateAssetSubsetHandler{
+		ownerParamIndex: i,
+		segs:            segs,
+	}
+
+	h.OwnerId, err = xuuid.Parse(segs[i])
+	if err != nil {
+		return nil, err
+	}
+
+	return h, nil
+}
+
+type PrivateAssetSubsetHandler struct {
+	ownerParamIndex int
+	segs            []string
+	OwnerId         xuuid.UUID
+}
+
+func (h PrivateAssetSubsetHandler) GetAccessRuleByReplaceOwnerId(requesterId xuuid.UUID) string {
+	h.segs[h.ownerParamIndex] = requesterId.String()
+	return strings.Join(h.segs, "/")
 }
 
 // ================================================================
