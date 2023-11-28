@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/google/uuid"
+	"github.com/hexcraft-biz/xuuid"
 )
 
 // ================================================================
@@ -38,12 +41,12 @@ func (ms Md5Identifier) Value() (driver.Value, error) {
 }
 
 // ================================================================
-type EndpointAccessRules struct {
+type AccessRules struct {
 	Subsets    []string `json:"subsets"`
 	Exceptions []string `json:"exceptions,omitempty"`
 }
 
-func (r *EndpointAccessRules) Scan(value any) error {
+func (r *AccessRules) Scan(value any) error {
 	bytes, ok := value.([]byte)
 	if !ok {
 		return errors.New("Type assertion to []byte failed")
@@ -52,32 +55,32 @@ func (r *EndpointAccessRules) Scan(value any) error {
 	return json.Unmarshal(bytes, r)
 }
 
-func (r EndpointAccessRules) Value() (driver.Value, error) {
+func (r AccessRules) Value() (driver.Value, error) {
 	return json.Marshal(r)
 }
 
-func (r *EndpointAccessRules) AddSubset(rule string) {
+func (r *AccessRules) AddSubset(rule string) {
 	r.Subsets = append(r.Subsets, rule)
 }
 
-func (r *EndpointAccessRules) AddException(rule string) {
+func (r *AccessRules) AddException(rule string) {
 	r.Exceptions = append(r.Exceptions, rule)
 }
 
-func (r *EndpointAccessRules) RemoveRedundant() {
+func (r *AccessRules) RemoveRedundant() {
 	r.Subsets = removeRedundant(r.Subsets)
 	r.Exceptions = removeRedundant(r.Exceptions)
 }
 
-func (r *EndpointAccessRules) Merge(rules *EndpointAccessRules) {
+func (r *AccessRules) Merge(rules *AccessRules) {
 	r.Subsets = append(r.Subsets, rules.Subsets...)
 	r.Exceptions = append(r.Exceptions, rules.Exceptions...)
 	r.RemoveRedundant()
 }
 
-func (r EndpointAccessRules) CanAccess(urlPath string) bool {
-	if isCovered(urlPath, r.Subsets) {
-		if isCovered(urlPath, r.Exceptions) {
+func (r AccessRules) CanAccess(subset string) bool {
+	if isCovered(subset, r.Subsets) {
+		if isCovered(subset, r.Exceptions) {
 			return false
 		}
 		return true
@@ -86,12 +89,13 @@ func (r EndpointAccessRules) CanAccess(urlPath string) bool {
 }
 
 // ================================================================
-type AccessRulesSettingBehavior struct {
-	Behavior    string               `json:"behavior" db:"-" binding:"required"`
-	AccessRules *EndpointAccessRules `json:"accessRules" db:"access_rules" binding:"required"`
+type AccessRulesWithBehavior struct {
+	Behavior           string        `json:"behavior" db:"-" binding:"required"`
+	AffectedEndpointId Md5Identifier `json:"affectedEndpointId" db:"endpoint_id" binding:"required"`
+	AccessRules        *AccessRules  `json:"accessRules" db:"access_rules" binding:"required"`
 }
 
-func (r *AccessRulesSettingBehavior) Scan(value any) error {
+func (r *AccessRulesWithBehavior) Scan(value any) error {
 	bytes, ok := value.([]byte)
 	if !ok {
 		return errors.New("Type assertion to []byte failed")
@@ -100,14 +104,24 @@ func (r *AccessRulesSettingBehavior) Scan(value any) error {
 	return json.Unmarshal(bytes, r)
 }
 
-func (r AccessRulesSettingBehavior) Value() (driver.Value, error) {
+func (r AccessRulesWithBehavior) Value() (driver.Value, error) {
 	return json.Marshal(r)
 }
 
 // ================================================================
-type Visibilities struct {
-	Subsets    []string `json:"subsets"`
-	Exceptions []string `json:"exceptions,omitempty"`
+type SubsetString string
+
+func (s SubsetString) ExtractOwnerId(i int) (xuuid.UUID, error) {
+	if (i <= 1) || (i%2 != 0) {
+		return xuuid.UUID(uuid.Nil), errors.New("Invalid subset segment index")
+	}
+
+	segs := strings.Split(string(s), "/")
+	if i >= len(segs) {
+		return xuuid.UUID(uuid.Nil), errors.New("Invalid subset segment index")
+	}
+
+	return xuuid.Parse(segs[i])
 }
 
 // ================================================================

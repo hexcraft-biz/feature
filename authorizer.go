@@ -30,7 +30,7 @@ const (
 type Authorizer struct {
 	dogmasApiUrl        *url.URL
 	EndpointId          *Md5Identifier
-	accessRulesToCommit map[int]map[Md5Identifier]*EndpointAccessRules
+	accessRulesToCommit map[int]map[Md5Identifier]*AccessRules
 }
 
 func (u *Authorizer) AffectedEndpoint(affectedEndpointId Md5Identifier) *affectedEndpointAccessRules {
@@ -57,11 +57,9 @@ func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
 		for id, accessRules := range idAccessRules {
 			accessRules.RemoveRedundant()
 			rulesWithBehavior = append(rulesWithBehavior, &AccessRulesWithBehavior{
+				Behavior:           behaviorstring,
 				AffectedEndpointId: id,
-				AccessRulesSettingBehavior: &AccessRulesSettingBehavior{
-					Behavior:    behaviorstring,
-					AccessRules: accessRules,
-				},
+				AccessRules:        accessRules,
 			})
 		}
 	}
@@ -95,11 +93,6 @@ func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
 	return nil
 }
 
-type AccessRulesWithBehavior struct {
-	AffectedEndpointId Md5Identifier `json:"affectedEndpointId" db:"endpoint_id" binding:"required"`
-	*AccessRulesSettingBehavior
-}
-
 type affectedEndpointAccessRules struct {
 	*Authorizer
 	affectedEndpointId Md5Identifier
@@ -127,11 +120,11 @@ func (u *affectedEndpointAccessRules) addAction(action int, rule string) *affect
 	}
 
 	if _, ok := u.accessRulesToCommit[behavior]; !ok {
-		u.accessRulesToCommit[behavior] = map[Md5Identifier]*EndpointAccessRules{}
+		u.accessRulesToCommit[behavior] = map[Md5Identifier]*AccessRules{}
 	}
 
 	if _, ok := u.accessRulesToCommit[behavior][u.affectedEndpointId]; !ok {
-		u.accessRulesToCommit[behavior][u.affectedEndpointId] = &EndpointAccessRules{}
+		u.accessRulesToCommit[behavior][u.affectedEndpointId] = &AccessRules{}
 	}
 
 	switch action {

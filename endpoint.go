@@ -11,28 +11,34 @@ import (
 )
 
 type Endpoint struct {
-	*Dogmas       `json:"-"`
-	EndpointId    Md5Identifier `json:"endpointId"`
-	ByAuthorityOf string        `json:"byAuthorityOf"`
-	Method        string        `json:"method"`
-	UrlHost       *string       `json:"urlHost"`
-	UrlFeature    *string       `json:"urlFeature"`
-	UrlPath       string        `json:"urlPath"`
+	EndpointId      Md5Identifier `json:"endpointId" db:"endpoint_id" binding:"required"`
+	Ownership       string        `json:"ownership" db:"ownership" binding:"required"`
+	Method          string        `json:"method" db:"method" binding:"required"`
+	UrlHost         *string       `json:"urlHost" db:"url_host" binding:"required"`
+	UrlFeature      *string       `json:"urlFeature" db:"url_feature" binding:"required"`
+	UrlPath         string        `json:"urlPath" db:"url_path" binding:"required"`
+	OwnerParamIndex int           `json:"ownerParamIndex" db:"owner_param_index" binding:"required"`
 }
 
-func (e *Endpoint) SetAccessRulesFor(userId xuuid.UUID) *Authorizer {
+type EndpointHandler struct {
+	*Dogmas `json:"-"`
+	*Endpoint
+}
+
+func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer {
 	return &Authorizer{
-		dogmasApiUrl:        e.Dogmas.HostUrl.JoinPath("/permissions/v1/users", userId.String()),
+		dogmasApiUrl:        e.Dogmas.HostUrl.JoinPath("/permissions/v1/custodians", custodianId.String()),
 		EndpointId:          &e.EndpointId,
-		accessRulesToCommit: map[int]map[Md5Identifier]*EndpointAccessRules{},
+		accessRulesToCommit: map[int]map[Md5Identifier]*AccessRules{},
 	}
 }
 
-func (e Endpoint) CanBeAccessedBy(userId xuuid.UUID, subset string) (bool, her.Error) {
+// For resource to check
+func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, subset string) (bool, her.Error) {
 	jsonbytes, err := json.Marshal(map[string]string{
 		"method":             e.Method,
 		"requestEndpointUrl": *e.UrlHost + path.Join("/", *e.UrlFeature, subset),
-		"userId":             userId.String(),
+		"requesterId":        requesterId.String(),
 	})
 	if err != nil {
 		return false, her.NewError(http.StatusInternalServerError, err, nil)

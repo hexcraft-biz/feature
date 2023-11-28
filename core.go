@@ -22,9 +22,9 @@ import (
 // ================================================================
 //
 // ================================================================
-type HandlerFunc func(*Endpoint) gin.HandlerFunc
+type HandlerFunc func(*EndpointHandler) gin.HandlerFunc
 
-func handlerFuncs(e *Endpoint, handlers []HandlerFunc) []gin.HandlerFunc {
+func handlerFuncs(e *EndpointHandler, handlers []HandlerFunc) []gin.HandlerFunc {
 	funcs := make([]gin.HandlerFunc, len(handlers))
 	for i, h := range handlers {
 		funcs[i] = h(e)
@@ -33,9 +33,16 @@ func handlerFuncs(e *Endpoint, handlers []HandlerFunc) []gin.HandlerFunc {
 }
 
 const (
-	ByAuthorityOfOrganization = "ORGANIZATION"
-	ByAuthorityOfDataOwner    = "DATA_OWNER"
-	ByAuthorityOfNone         = "NONE"
+	OwnershipOrganization = "ORGANIZATION"
+	OwnershipPrivate      = "PRIVATE"
+	OwnershipPublic       = "PUBLIC"
+)
+
+const (
+	EnumOwnershipUndef int = iota
+	EnumOwnershipOrganization
+	EnumOwnershipPrivate
+	EnumOwnershipPublic
 )
 
 // ================================================================
@@ -55,25 +62,25 @@ func New(e *gin.Engine, featurePath string, d *Dogmas) *Feature {
 	}
 }
 
-func (f *Feature) ByAuthorityOfOrganization() *OrganizationHttpMethods {
-	return &OrganizationHttpMethods{
+func (f *Feature) OrganizationAssets() *OrganizationAssets {
+	return &OrganizationAssets{
 		Feature: f,
 	}
 }
 
-func (f *Feature) ByAuthorityOfDataOwner() *DataOwnerHttpMethods {
-	return &DataOwnerHttpMethods{
+func (f *Feature) PrivateAssets() *PrivateAssets {
+	return &PrivateAssets{
 		Feature: f,
 	}
 }
 
-func (f *Feature) ByAuthorityOfNone() *PublicHttpMethods {
-	return &PublicHttpMethods{
+func (f *Feature) PublicAssets() *PublicAssets {
+	return &PublicAssets{
 		Feature: f,
 	}
 }
 
-func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string, scopes []string) *Endpoint {
+func (f *Feature) addEndpoint(enumOwnership int, method, relativePath string, scopes []string, ownerParamIndex int) *EndpointHandler {
 	segs := strings.Split(path.Join("/", relativePath), "/")
 	for i := range segs {
 		if strings.HasPrefix(segs[i], ":") {
@@ -87,14 +94,36 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string, scopes
 		panic("Invalid endpoint")
 	}
 
+	ownership := ""
+	switch enumOwnership {
+	case EnumOwnershipOrganization:
+		ownership = OwnershipOrganization
+		ownerParamIndex = 0
+
+	case EnumOwnershipPrivate:
+		ownership = OwnershipPrivate
+		if ownerParamIndex > 0 {
+			if ownerParamIndex%2 != 0 {
+				panic("Invalid endpoint")
+			}
+		}
+
+	case EnumOwnershipPublic:
+		ownership = OwnershipPublic
+		ownerParamIndex = 0
+
+	default:
+		panic("Invalid endpoint")
+	}
+
 	e := &Endpoint{
-		Dogmas:        f.Dogmas,
-		EndpointId:    Md5Identifier(fmt.Sprintf("%x", md5.Sum([]byte(method+u.String())))),
-		ByAuthorityOf: byAuthorityOf,
-		Method:        method,
-		UrlHost:       &f.Dogmas.AppHost,
-		UrlFeature:    &f.FeaturePath,
-		UrlPath:       relativePath,
+		EndpointId:      Md5Identifier(fmt.Sprintf("%x", md5.Sum([]byte(method+u.String())))),
+		Ownership:       ownership,
+		Method:          method,
+		UrlHost:         &f.Dogmas.AppHost,
+		UrlFeature:      &f.FeaturePath,
+		UrlPath:         relativePath,
+		OwnerParamIndex: ownerParamIndex,
 	}
 
 	if len(scopes) > 0 {
@@ -105,7 +134,10 @@ func (f *Feature) addEndpoint(byAuthorityOf, method, relativePath string, scopes
 		f.Dogmas.endpointsContainer("").addEndpoint(e)
 	}
 
-	return e
+	return &EndpointHandler{
+		Dogmas:   f.Dogmas,
+		Endpoint: e,
+	}
 }
 
 // ================================================================
@@ -152,7 +184,8 @@ type ResultAccessPermission struct {
 	CanAccess bool `json:"canAccess"`
 }
 
-func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *xuuid.UUID) (bool, her.Error) {
+// For api-proxy to check
+func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
 	if len(scopes) < 1 {
 		return false, her.ErrForbidden
 	}
@@ -162,8 +195,8 @@ func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *x
 		"method":             method,
 		"requestEndpointUrl": endpointUrl,
 	}
-	if userId != nil {
-		data["userId"] = userId.String()
+	if requesterId != nil {
+		data["requesterId"] = requesterId.String()
 	}
 
 	jsonbytes, err := json.Marshal(data)
@@ -198,7 +231,7 @@ func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, userId *x
 // ================================================================
 //
 // ================================================================
-func ToEndpointIdWithPath(method, endpointUrl string) (Md5Identifier, string, error) {
+func ToEndpointIdWithPath(method, endpointUrl string) (Md5Identifier, SubsetString, error) {
 	u, err := url.ParseRequestURI(endpointUrl)
 	if err != nil {
 		return "", "", errors.New("Invaild enpoint url")
@@ -219,7 +252,7 @@ func ToEndpointIdWithPath(method, endpointUrl string) (Md5Identifier, string, er
 	urlstring := u.Scheme + "://" + path.Join(u.Host, urlFeature, strings.Join(pathSegs, "/"))
 
 	md5bytes := md5.Sum([]byte(method + urlstring))
-	return Md5Identifier(fmt.Sprintf("%x", md5bytes)), urlPath, nil
+	return Md5Identifier(fmt.Sprintf("%x", md5bytes)), SubsetString(urlPath), nil
 }
 
 func ToEndpointId(method, endpointUrl string) (Md5Identifier, error) {
@@ -232,7 +265,7 @@ func extractPathSegments(s string) (string, string, error) {
 	loc := re.FindStringIndex(s)
 
 	if loc == nil {
-		return "", "", fmt.Errorf("Invalid endpoint")
+		return "", "", errors.New("Invalid endpoint")
 	}
 
 	return s[0:loc[1]], s[loc[1]:], nil
