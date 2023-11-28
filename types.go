@@ -148,6 +148,7 @@ func (h PrivateAssetSubsetHandler) GetAccessRuleByReplaceOwnerId(requesterId xuu
 
 // ================================================================
 type PredefinedEndpointHandler struct {
+	host            *url.URL
 	hostWithFeature *url.URL
 	endpoints       []*PredefinedEndpoint
 }
@@ -157,16 +158,21 @@ type PredefinedEndpoint struct {
 	relativePath string
 }
 
-func NewPredefinedEndpointHandler(host, feature string) (*PredefinedEndpointHandler, error) {
+func NewPredefinedEndpointHandler(host string) (*PredefinedEndpointHandler, error) {
 	u, err := url.ParseRequestURI(host)
 	if err != nil {
 		return nil, err
 	}
 
 	return &PredefinedEndpointHandler{
-		hostWithFeature: u.JoinPath(feature),
+		host:            u,
+		hostWithFeature: nil,
 		endpoints:       []*PredefinedEndpoint{},
 	}, nil
+}
+
+func (h *PredefinedEndpointHandler) SetFeature(feature string) {
+	h.hostWithFeature = h.host.JoinPath(feature)
 }
 
 func (h *PredefinedEndpointHandler) Add(method, path string) {
@@ -178,6 +184,10 @@ func (h *PredefinedEndpointHandler) Add(method, path string) {
 
 func (h PredefinedEndpointHandler) GetEndpointIds() ([]Md5Identifier, error) {
 	var err error
+	if h.hostWithFeature == nil {
+		return nil, errors.New("nil feature")
+	}
+
 	identifiers := make([]Md5Identifier, len(h.endpoints))
 	for i, e := range h.endpoints {
 		identifiers[i], err = ToEndpointId(e.method, h.hostWithFeature.JoinPath(e.relativePath).String())
