@@ -157,11 +157,16 @@ type PredefinedEndpoint struct {
 	relativePath string
 }
 
-func NewPredefinedEndpointHandler(hostWithFeature *url.URL) *PredefinedEndpointHandler {
-	return &PredefinedEndpointHandler{
-		hostWithFeature: hostWithFeature,
-		endpoints:       []*PredefinedEndpoint{},
+func NewPredefinedEndpointHandler(host, feature string) (*PredefinedEndpointHandler, error) {
+	u, err := url.ParseRequestURI(host)
+	if err != nil {
+		return nil, err
 	}
+
+	return &PredefinedEndpointHandler{
+		hostWithFeature: u.JoinPath(feature),
+		endpoints:       []*PredefinedEndpoint{},
+	}, nil
 }
 
 func (h *PredefinedEndpointHandler) Add(method, path string) {
