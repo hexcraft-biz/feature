@@ -171,8 +171,9 @@ func NewPredefinedEndpointHandler(host string) (*PredefinedEndpointHandler, erro
 	}, nil
 }
 
-func (h *PredefinedEndpointHandler) SetFeature(feature string) {
+func (h *PredefinedEndpointHandler) SetFeature(feature string) *PredefinedEndpointHandler {
 	h.hostWithFeature = h.host.JoinPath(feature)
+	return h
 }
 
 func (h *PredefinedEndpointHandler) Add(method, path string) {
