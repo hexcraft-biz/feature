@@ -1,6 +1,7 @@
 package feature
 
 import (
+	"crypto/md5"
 	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
@@ -111,6 +112,32 @@ func (r AccessRulesWithBehavior) Value() (driver.Value, error) {
 // ================================================================
 type SubsetString string
 
+// ================================================================
+func (s SubsetString) toSubsetHandler() *SubsetHandler {
+	segs := strings.Split(string(s), "/")
+	for i, s := range segs {
+		if strings.HasPrefix(s, ":") {
+			segs[i] = "*"
+		}
+	}
+
+	return &SubsetHandler{
+		segs: segs,
+	}
+}
+
+type SubsetHandler struct {
+	segs []string
+}
+
+func (h SubsetHandler) GetReplacedString(args map[int]string) string {
+	for i, s := range args {
+		h.segs[i] = s
+	}
+	return strings.Join(h.segs, "/")
+}
+
+// ================================================================
 func (s SubsetString) ToPrivateAssetSubsetHandler(i int) (*PrivateAssetSubsetHandler, error) {
 	var err error
 	if (i <= 1) || (i%2 != 0) {
@@ -136,8 +163,8 @@ func (s SubsetString) ToPrivateAssetSubsetHandler(i int) (*PrivateAssetSubsetHan
 }
 
 type PrivateAssetSubsetHandler struct {
-	ownerParamIndex int
 	segs            []string
+	ownerParamIndex int
 	OwnerId         xuuid.UUID
 }
 
@@ -150,25 +177,20 @@ func (h PrivateAssetSubsetHandler) GetAccessRuleByReplaceOwnerId(requesterId xuu
 type PredefinedEndpointHandler struct {
 	host            *url.URL
 	hostWithFeature *url.URL
-	endpoints       []*PredefinedEndpoint
+	endpoints       map[Md5Identifier]*SubsetHandler
 }
 
-type PredefinedEndpoint struct {
-	method       string
-	relativePath string
-}
-
-func NewPredefinedEndpointHandler(host string) (*PredefinedEndpointHandler, error) {
+func MustNewPredefinedEndpointHandler(host string) *PredefinedEndpointHandler {
 	u, err := url.ParseRequestURI(host)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	return &PredefinedEndpointHandler{
 		host:            u,
 		hostWithFeature: nil,
-		endpoints:       []*PredefinedEndpoint{},
-	}, nil
+		endpoints:       map[Md5Identifier]*SubsetHandler{},
+	}
 }
 
 func (h *PredefinedEndpointHandler) SetFeature(feature string) *PredefinedEndpointHandler {
@@ -176,28 +198,21 @@ func (h *PredefinedEndpointHandler) SetFeature(feature string) *PredefinedEndpoi
 	return h
 }
 
-func (h *PredefinedEndpointHandler) Add(method, path string) {
-	h.endpoints = append(h.endpoints, &PredefinedEndpoint{
-		method:       method,
-		relativePath: path,
-	})
+func (h *PredefinedEndpointHandler) MustAdd(method, path string) {
+	if h.hostWithFeature == nil {
+		panic("nil feature")
+	}
+
+	subsetHandler := SubsetString(path).toSubsetHandler()
+
+	md5bytes := md5.Sum([]byte(method + h.hostWithFeature.JoinPath(subsetHandler.GetReplacedString(nil)).String()))
+	identifier := Md5Identifier(fmt.Sprintf("%x", md5bytes))
+
+	h.endpoints[identifier] = subsetHandler
 }
 
-func (h PredefinedEndpointHandler) GetEndpointIds() ([]Md5Identifier, error) {
-	var err error
-	if h.hostWithFeature == nil {
-		return nil, errors.New("nil feature")
-	}
-
-	identifiers := make([]Md5Identifier, len(h.endpoints))
-	for i, e := range h.endpoints {
-		identifiers[i], err = ToEndpointId(e.method, h.hostWithFeature.JoinPath(e.relativePath).String())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return identifiers, nil
+func (h PredefinedEndpointHandler) GetEndpoints() map[Md5Identifier]*SubsetHandler {
+	return h.endpoints
 }
 
 // ================================================================
