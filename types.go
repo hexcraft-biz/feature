@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -143,6 +144,25 @@ type PrivateAssetSubsetHandler struct {
 func (h PrivateAssetSubsetHandler) GetAccessRuleByReplaceOwnerId(requesterId xuuid.UUID) string {
 	h.segs[h.ownerParamIndex] = requesterId.String()
 	return strings.Join(h.segs, "/")
+}
+
+// ================================================================
+type PredefinedEndpoint struct {
+	method          string
+	relativePath    string
+	hostWithFeature *url.URL
+}
+
+func NewPredefinedEndpoint(method, path string, hostWithFeature *url.URL) *PredefinedEndpoint {
+	return &PredefinedEndpoint{
+		method:          method,
+		relativePath:    path,
+		hostWithFeature: hostWithFeature,
+	}
+}
+
+func (e PredefinedEndpoint) EndpointId() (Md5Identifier, error) {
+	return ToEndpointId(e.method, e.hostWithFeature.JoinPath(e.relativePath).String())
 }
 
 // ================================================================
