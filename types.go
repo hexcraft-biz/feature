@@ -147,22 +147,41 @@ func (h PrivateAssetSubsetHandler) GetAccessRuleByReplaceOwnerId(requesterId xuu
 }
 
 // ================================================================
-type PredefinedEndpoint struct {
-	method          string
-	relativePath    string
+type PredefinedEndpointHandler struct {
 	hostWithFeature *url.URL
+	endpoints       []*PredefinedEndpoint
 }
 
-func NewPredefinedEndpoint(method, path string, hostWithFeature *url.URL) *PredefinedEndpoint {
-	return &PredefinedEndpoint{
-		method:          method,
-		relativePath:    path,
+type PredefinedEndpoint struct {
+	method       string
+	relativePath string
+}
+
+func NewPredefinedEndpointHandler(hostWithFeature *url.URL) *PredefinedEndpointHandler {
+	return &PredefinedEndpointHandler{
 		hostWithFeature: hostWithFeature,
+		endpoints:       []*PredefinedEndpoint{},
 	}
 }
 
-func (e PredefinedEndpoint) EndpointId() (Md5Identifier, error) {
-	return ToEndpointId(e.method, e.hostWithFeature.JoinPath(e.relativePath).String())
+func (h *PredefinedEndpointHandler) Add(method, path string) {
+	h.endpoints = append(h.endpoints, &PredefinedEndpoint{
+		method:       method,
+		relativePath: path,
+	})
+}
+
+func (h PredefinedEndpointHandler) GetEndpointIds() ([]Md5Identifier, error) {
+	var err error
+	identifiers := make([]Md5Identifier, len(h.endpoints))
+	for i, e := range h.endpoints {
+		identifiers[i], err = ToEndpointId(e.method, h.hostWithFeature.JoinPath(e.relativePath).String())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return identifiers, nil
 }
 
 // ================================================================
