@@ -122,11 +122,10 @@ func (d Dogmas) Register() {
 
 // For api-proxy to check
 func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
-	scopes := strings.Split(scope, " ")
-	if len(scopes) < 1 {
+	if scope == "" {
 		return false, her.ErrForbidden
 	}
-	return d.canBeAccessedBy(scopes, method, endpointUrl, requesterId)
+	return d.canBeAccessedBy(strings.Split(scope, " "), method, endpointUrl, requesterId)
 }
 
 func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
