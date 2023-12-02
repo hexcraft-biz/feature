@@ -1,12 +1,11 @@
 package feature
 
 import (
-	"bytes"
-	"encoding/json"
 	"flag"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hexcraft-biz/her"
@@ -121,40 +120,32 @@ func (d Dogmas) Register() {
 	}
 }
 
-type ResultAccessPermission struct {
-	CanAccess bool `json:"canAccess"`
-}
-
 // For api-proxy to check
-func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
+func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
+	scopes := strings.Split(scope, " ")
 	if len(scopes) < 1 {
 		return false, her.ErrForbidden
 	}
+	return d.canBeAccessedBy(scopes, method, endpointUrl, requesterId)
+}
 
-	data := map[string]any{
-		"scopes":             scopes,
-		"method":             method,
-		"requestEndpointUrl": endpointUrl,
+func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
+	u := d.HostUrl.JoinPath("/permissions/v1/endpoints")
+	q := u.Query()
+	if scopes != nil {
+		q.Set("scopes", strings.Join(scopes, " "))
 	}
+	q.Set("method", method)
+	q.Set("url", endpointUrl)
 	if requesterId != nil {
-		data["requesterId"] = requesterId.String()
+		q.Set("requester", requesterId.String())
 	}
-
-	jsonbytes, err := json.Marshal(data)
-	if err != nil {
-		return false, her.NewError(http.StatusInternalServerError, err, nil)
-	}
-
-	req, err := http.NewRequest("POST", d.HostUrl.JoinPath("/permissions/v1/proxy").String(), bytes.NewReader(jsonbytes))
-	if err != nil {
-		return false, her.NewError(http.StatusInternalServerError, err, nil)
-	}
+	u.RawQuery = q.Encode()
 
 	result := new(ResultAccessPermission)
 	payload := her.NewPayload(result)
-	client := &http.Client{}
 
-	resp, err := client.Do(req)
+	resp, err := http.Get(u.String())
 	if err != nil {
 		return false, her.NewError(http.StatusInternalServerError, err, nil)
 	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
@@ -167,4 +158,8 @@ func (d Dogmas) CanAccess(scopes []string, method, endpointUrl string, requester
 	default:
 		return false, her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
 	}
+}
+
+type ResultAccessPermission struct {
+	CanAccess bool `json:"canAccess"`
 }

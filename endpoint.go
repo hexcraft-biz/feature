@@ -2,7 +2,6 @@ package feature
 
 import (
 	"errors"
-	"net/http"
 	"net/url"
 	"path"
 	"regexp"
@@ -44,29 +43,7 @@ func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer 
 
 // For resource to check
 func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, requestUrlPath string) (bool, her.Error) {
-	u := e.Dogmas.HostUrl.JoinPath("/permissions/v1/internal")
-	q := u.Query()
-	q.Set("method", e.Method)
-	q.Set("url", e.UrlHost+path.Join("/", e.UrlFeature, requestUrlPath))
-	q.Set("requester", requesterId.String())
-	u.RawQuery = q.Encode()
-
-	result := new(ResultAccessPermission)
-	payload := her.NewPayload(result)
-
-	resp, err := http.Get(u.String())
-	if err != nil {
-		return false, her.NewError(http.StatusInternalServerError, err, nil)
-	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
-		return false, err
-	}
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		return result.CanAccess, nil
-	default:
-		return false, her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
-	}
+	return e.Dogmas.canBeAccessedBy(nil, e.Method, e.UrlHost+path.Join("/", e.UrlFeature, requestUrlPath), &requesterId)
 }
 
 // ================================================================
