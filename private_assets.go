@@ -9,27 +9,27 @@ type PrivateAssets struct {
 	*Feature
 }
 
-func (m *PrivateAssets) GET(relativePath string, ownerParamIndex int, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPrivate, "GET", relativePath, scopes, ownerParamIndex)
+func (m *PrivateAssets) GET(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
+	e := m.addEndpoint(OwnershipPrivate, "GET", relativePath, scopes)
 	return m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *PrivateAssets) POST(relativePath string, ownerParamIndex int, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPrivate, "POST", relativePath, scopes, ownerParamIndex)
+func (m *PrivateAssets) POST(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
+	e := m.addEndpoint(OwnershipPrivate, "POST", relativePath, scopes)
 	return m.RouterGroup.POST(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *PrivateAssets) PUT(relativePath string, ownerParamIndex int, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPrivate, "PUT", relativePath, scopes, ownerParamIndex)
+func (m *PrivateAssets) PUT(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
+	e := m.addEndpoint(OwnershipPrivate, "PUT", relativePath, scopes)
 	return m.RouterGroup.PUT(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *PrivateAssets) PATCH(relativePath string, ownerParamIndex int, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPrivate, "PATCH", relativePath, scopes, ownerParamIndex)
+func (m *PrivateAssets) PATCH(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
+	e := m.addEndpoint(OwnershipPrivate, "PATCH", relativePath, scopes)
 	return m.RouterGroup.PATCH(relativePath, handlerFuncs(e, handlers)...)
 }
 
-func (m *PrivateAssets) DELETE(relativePath string, ownerParamIndex int, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPrivate, "DELETE", relativePath, scopes, ownerParamIndex)
+func (m *PrivateAssets) DELETE(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
+	e := m.addEndpoint(OwnershipPrivate, "DELETE", relativePath, scopes)
 	return m.RouterGroup.DELETE(relativePath, handlerFuncs(e, handlers)...)
 }

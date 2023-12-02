@@ -10,26 +10,26 @@ type PublicAssets struct {
 }
 
 func (m *PublicAssets) GET(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPublic, "GET", relativePath, scopes, 0)
+	e := m.addEndpoint(OwnershipPublic, "GET", relativePath, scopes)
 	return m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
 }
 
 func (m *PublicAssets) POST(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPublic, "POST", relativePath, scopes, 0)
+	e := m.addEndpoint(OwnershipPublic, "POST", relativePath, scopes)
 	return m.RouterGroup.POST(relativePath, handlerFuncs(e, handlers)...)
 }
 
 func (m *PublicAssets) PUT(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPublic, "PUT", relativePath, scopes, 0)
+	e := m.addEndpoint(OwnershipPublic, "PUT", relativePath, scopes)
 	return m.RouterGroup.PUT(relativePath, handlerFuncs(e, handlers)...)
 }
 
 func (m *PublicAssets) PATCH(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPublic, "PATCH", relativePath, scopes, 0)
+	e := m.addEndpoint(OwnershipPublic, "PATCH", relativePath, scopes)
 	return m.RouterGroup.PATCH(relativePath, handlerFuncs(e, handlers)...)
 }
 
 func (m *PublicAssets) DELETE(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(EnumOwnershipPublic, "DELETE", relativePath, scopes, 0)
+	e := m.addEndpoint(OwnershipPublic, "DELETE", relativePath, scopes)
 	return m.RouterGroup.DELETE(relativePath, handlerFuncs(e, handlers)...)
 }

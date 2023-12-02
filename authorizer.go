@@ -10,30 +10,21 @@ import (
 	"github.com/hexcraft-biz/xuuid"
 )
 
-const (
-	HeaderEndpointId    = "X-Endpoint-Id"
-	HeaderByCustodianId = "X-By-Custodian-Id"
-)
-
-const (
-	ActionAssign int = iota
-	ActionGrant
-	ActionRevoke
-)
-
-const (
-	writeBehaviorUndef int = iota
-	writeBehaviorIfNotExists
-	writeBehaviorOverwrite
-)
-
-type Authorizer struct {
-	dogmasApiUrl        *url.URL
-	EndpointId          *Md5Identifier
-	accessRulesToCommit map[int]map[Md5Identifier]*AccessRules
+func newAuthorizer(dogmasHost *url.URL, custodianId, viaEndpointId xuuid.UUID) *Authorizer {
+	return &Authorizer{
+		dogmasApiUrl:        dogmasHost.JoinPath("/permissions/v1/custodians", custodianId.String()),
+		viaEndpointId:       viaEndpointId,
+		accessRulesToCommit: accessRulesToCommit{},
+	}
 }
 
-func (u *Authorizer) AffectedEndpoint(affectedEndpointId Md5Identifier) *affectedEndpointAccessRules {
+type Authorizer struct {
+	dogmasApiUrl  *url.URL
+	viaEndpointId xuuid.UUID
+	accessRulesToCommit
+}
+
+func (u *Authorizer) AffectedEndpoint(affectedEndpointId xuuid.UUID) *affectedEndpointAccessRules {
 	return &affectedEndpointAccessRules{
 		Authorizer:         u,
 		affectedEndpointId: affectedEndpointId,
@@ -41,28 +32,7 @@ func (u *Authorizer) AffectedEndpoint(affectedEndpointId Md5Identifier) *affecte
 }
 
 func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
-	rulesWithBehavior := []*AccessRulesWithBehavior{}
-	for behavior, idAccessRules := range u.accessRulesToCommit {
-
-		behaviorstring := ""
-		switch behavior {
-		case writeBehaviorIfNotExists:
-			behaviorstring = "IF_NOT_EXISTS"
-		case writeBehaviorOverwrite:
-			behaviorstring = "OVERWRITE"
-		default:
-			return her.NewErrorWithMessage(http.StatusInternalServerError, "Undefined write behavior", nil)
-		}
-
-		for id, accessRules := range idAccessRules {
-			accessRules.RemoveRedundant()
-			rulesWithBehavior = append(rulesWithBehavior, &AccessRulesWithBehavior{
-				Behavior:           behaviorstring,
-				AffectedEndpointId: id,
-				AccessRules:        accessRules,
-			})
-		}
-	}
+	rulesWithBehavior := u.toAccessRulesWithBehavior()
 
 	if len(rulesWithBehavior) > 0 {
 		jsonbytes, err := json.Marshal(rulesWithBehavior)
@@ -75,7 +45,7 @@ func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
 			return her.NewError(http.StatusInternalServerError, err, nil)
 		}
 
-		req.Header.Set(HeaderEndpointId, string(*u.EndpointId))
+		req.Header.Set(HeaderViaEndpointId, u.viaEndpointId.String())
 		req.Header.Set(HeaderByCustodianId, byCustodianId.String())
 
 		payload := her.NewPayload(nil)
@@ -95,44 +65,62 @@ func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
 
 type affectedEndpointAccessRules struct {
 	*Authorizer
-	affectedEndpointId Md5Identifier
+	affectedEndpointId xuuid.UUID
 }
 
-func (u *affectedEndpointAccessRules) Assign(rule string) *affectedEndpointAccessRules {
-	return u.addAction(ActionAssign, rule)
+func (r *affectedEndpointAccessRules) Assign(rule string) {
+	r.accessRulesToCommit.add(ActionAssign, rule, r.affectedEndpointId)
 }
 
-func (u *affectedEndpointAccessRules) Grant(rule string) *affectedEndpointAccessRules {
-	return u.addAction(ActionGrant, rule)
+func (r *affectedEndpointAccessRules) Grant(rule string) {
+	r.accessRulesToCommit.add(ActionGrant, rule, r.affectedEndpointId)
 }
 
-func (u *affectedEndpointAccessRules) Revoke(rule string) *affectedEndpointAccessRules {
-	return u.addAction(ActionRevoke, rule)
+func (r *affectedEndpointAccessRules) Revoke(rule string) {
+	r.accessRulesToCommit.add(ActionRevoke, rule, r.affectedEndpointId)
 }
 
-func (u *affectedEndpointAccessRules) addAction(action int, rule string) *affectedEndpointAccessRules {
-	behavior := writeBehaviorUndef
+type accessRulesToCommit map[string]map[xuuid.UUID]*AccessRules
+
+func (r *accessRulesToCommit) add(action int, rule string, affectedEndpointId xuuid.UUID) {
+	behavior := ""
 	switch action {
 	case ActionGrant, ActionRevoke:
-		behavior = writeBehaviorOverwrite
+		behavior = WriteBehaviorOverwrite
 	default:
-		behavior = writeBehaviorIfNotExists
+		behavior = WriteBehaviorIdempotent
 	}
 
-	if _, ok := u.accessRulesToCommit[behavior]; !ok {
-		u.accessRulesToCommit[behavior] = map[Md5Identifier]*AccessRules{}
+	if _, ok := (*r)[behavior]; !ok {
+		(*r)[behavior] = map[xuuid.UUID]*AccessRules{}
 	}
 
-	if _, ok := u.accessRulesToCommit[behavior][u.affectedEndpointId]; !ok {
-		u.accessRulesToCommit[behavior][u.affectedEndpointId] = &AccessRules{}
+	if _, ok := (*r)[behavior][affectedEndpointId]; !ok {
+		(*r)[behavior][affectedEndpointId] = &AccessRules{}
 	}
 
 	switch action {
 	case ActionAssign, ActionGrant:
-		u.accessRulesToCommit[behavior][u.affectedEndpointId].AddSubset(rule)
+		(*r)[behavior][affectedEndpointId].AddSubset(rule)
 	case ActionRevoke:
-		u.accessRulesToCommit[behavior][u.affectedEndpointId].AddException(rule)
+		(*r)[behavior][affectedEndpointId].AddException(rule)
+	}
+}
+
+func (r accessRulesToCommit) toAccessRulesWithBehavior() []*AccessRulesWithBehavior {
+	rulesWithBehavior := []*AccessRulesWithBehavior{}
+	for behavior, idAccessRules := range r {
+		for affectedEndpointId, accessRules := range idAccessRules {
+			accessRules.RemoveRedundant()
+			rulesWithBehavior = append(rulesWithBehavior, &AccessRulesWithBehavior{
+				Behavior: behavior,
+				AuthorizationAction: &AuthorizationAction{
+					AffectedEndpointId: affectedEndpointId,
+					AccessRules:        accessRules,
+				},
+			})
+		}
 	}
 
-	return u
+	return rulesWithBehavior
 }
