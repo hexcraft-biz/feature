@@ -5,10 +5,6 @@ import (
 )
 
 // ================================================================
-const (
-	Delimiter = " "
-)
-
 type Identifiers map[any]bool
 
 func NewIdentifiers(input any) Identifiers {
