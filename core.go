@@ -102,7 +102,7 @@ func NewDogmas(appRootUrl *url.URL) (*Dogmas, error) {
 		init:          flag.Bool(FlagInit, false, FlagInitDescription),
 		HostUrl:       u,
 		AppRootUrl:    appRootUrl,
-		ScopesHandler: newScopesHandler(),
+		ScopesHandler: newScopesHandler(u),
 	}, nil
 }
 
@@ -115,7 +115,7 @@ func (d Dogmas) Register() {
 		panic("not init mode")
 	}
 
-	if err := d.ScopesHandler.register(d.HostUrl); err != nil {
+	if err := d.ScopesHandler.register(); err != nil {
 		panic(err)
 	}
 }

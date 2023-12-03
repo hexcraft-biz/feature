@@ -11,22 +11,30 @@ import (
 	"github.com/hexcraft-biz/her"
 )
 
-func newScopesHandler() ScopesHandler {
+func newScopesHandler(dogmasHostUrl *url.URL) ScopesHandler {
 	return ScopesHandler{
-		"": newScopeWithEndpoints("", ""),
+		dogmasHostUrl: dogmasHostUrl,
+		seMap: seMap{
+			"": newScopeWithEndpoints("", ""),
+		},
 	}
 }
 
-type ScopesHandler map[string]*scopeWithEndpoints
+type seMap map[string]*scopeWithEndpoints
 
-func (m *ScopesHandler) AddScope(identifier, description string) {
-	if _, ok := (*m)[identifier]; !ok {
-		(*m)[identifier] = newScopeWithEndpoints(identifier, description)
+type ScopesHandler struct {
+	dogmasHostUrl *url.URL
+	seMap
+}
+
+func (h *ScopesHandler) AddScope(identifier, description string) {
+	if _, ok := h.seMap[identifier]; !ok {
+		h.seMap[identifier] = newScopeWithEndpoints(identifier, description)
 	}
 }
 
-func (m ScopesHandler) Scope(identifier string) *scopeWithEndpoints {
-	se, ok := m[identifier]
+func (h ScopesHandler) Scope(identifier string) *scopeWithEndpoints {
+	se, ok := h.seMap[identifier]
 	if !ok {
 		panic("No such scope(s) to add endpoint")
 	}
@@ -34,10 +42,10 @@ func (m ScopesHandler) Scope(identifier string) *scopeWithEndpoints {
 	return se
 }
 
-func (h ScopesHandler) register(dogmasRootUrl *url.URL) error {
+func (h ScopesHandler) register() error {
 	scopes := []*scopeWithEndpoints{}
 
-	for _, se := range h {
+	for _, se := range h.seMap {
 		scopes = append(scopes, se)
 	}
 
@@ -47,7 +55,7 @@ func (h ScopesHandler) register(dogmasRootUrl *url.URL) error {
 			return err
 		}
 
-		req, err := http.NewRequest("POST", dogmasRootUrl.JoinPath("/resources/v1/scopes").String(), bytes.NewReader(jsonbytes))
+		req, err := http.NewRequest("POST", h.dogmasHostUrl.JoinPath("/resources/v1/scopes").String(), bytes.NewReader(jsonbytes))
 		if err != nil {
 			return err
 		}
@@ -69,7 +77,7 @@ func (h ScopesHandler) register(dogmasRootUrl *url.URL) error {
 
 func (h *ScopesHandler) SyncEndpoints(dogmasRootUrl, appRootUrl *url.URL) error {
 	endpoints := map[*Endpoint]struct{}{}
-	for _, se := range *h {
+	for _, se := range h.seMap {
 		for _, e := range se.Endpoints {
 			endpoints[e] = struct{}{}
 		}
@@ -112,7 +120,7 @@ func (h *ScopesHandler) SyncEndpoints(dogmasRootUrl, appRootUrl *url.URL) error 
 }
 
 func (h ScopesHandler) HasUnsynchronized() bool {
-	for _, se := range h {
+	for _, se := range h.seMap {
 		for _, e := range se.Endpoints {
 			if e.EndpointId.IsZero() {
 				return true
