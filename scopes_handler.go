@@ -75,7 +75,7 @@ func (h ScopesHandler) register() error {
 	return nil
 }
 
-func (h *ScopesHandler) SyncEndpoints(dogmasRootUrl, appRootUrl *url.URL) error {
+func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 	endpoints := map[*Endpoint]struct{}{}
 	for _, se := range h.seMap {
 		for _, e := range se.Endpoints {
@@ -83,7 +83,7 @@ func (h *ScopesHandler) SyncEndpoints(dogmasRootUrl, appRootUrl *url.URL) error 
 		}
 	}
 
-	u := dogmasRootUrl.JoinPath("/resources/v1/endpoints")
+	u := h.dogmasHostUrl.JoinPath("/resources/v1/endpoints")
 	q := u.Query()
 	q.Set("host", appRootUrl.String())
 	u.RawQuery = q.Encode()
