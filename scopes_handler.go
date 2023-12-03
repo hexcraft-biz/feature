@@ -14,27 +14,27 @@ import (
 func newScopesHandler(dogmasHostUrl *url.URL) ScopesHandler {
 	return ScopesHandler{
 		dogmasHostUrl: dogmasHostUrl,
-		seMap: seMap{
+		Maps: Maps{
 			"": newScopeWithEndpoints("", ""),
 		},
 	}
 }
 
-type seMap map[string]*scopeWithEndpoints
+type Maps map[string]*scopeWithEndpoints
 
 type ScopesHandler struct {
 	dogmasHostUrl *url.URL
-	seMap
+	Maps
 }
 
 func (h *ScopesHandler) AddScope(identifier, description string) {
-	if _, ok := h.seMap[identifier]; !ok {
-		h.seMap[identifier] = newScopeWithEndpoints(identifier, description)
+	if _, ok := h.Maps[identifier]; !ok {
+		h.Maps[identifier] = newScopeWithEndpoints(identifier, description)
 	}
 }
 
 func (h ScopesHandler) Scope(identifier string) *scopeWithEndpoints {
-	se, ok := h.seMap[identifier]
+	se, ok := h.Maps[identifier]
 	if !ok {
 		panic("No such scope(s) to add endpoint")
 	}
@@ -45,7 +45,7 @@ func (h ScopesHandler) Scope(identifier string) *scopeWithEndpoints {
 func (h ScopesHandler) register() error {
 	scopes := []*scopeWithEndpoints{}
 
-	for _, se := range h.seMap {
+	for _, se := range h.Maps {
 		scopes = append(scopes, se)
 	}
 
@@ -77,7 +77,7 @@ func (h ScopesHandler) register() error {
 
 func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 	endpoints := map[*Endpoint]struct{}{}
-	for _, se := range h.seMap {
+	for _, se := range h.Maps {
 		for _, e := range se.Endpoints {
 			endpoints[e] = struct{}{}
 		}
@@ -120,7 +120,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 }
 
 func (h ScopesHandler) HasUnsynchronized() bool {
-	for _, se := range h.seMap {
+	for _, se := range h.Maps {
 		for _, e := range se.Endpoints {
 			if e.EndpointId.IsZero() {
 				return true
