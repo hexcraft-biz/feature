@@ -1,9 +1,12 @@
 package feature
 
 import (
+	"net/url"
 	"path"
 	"regexp"
 	"strings"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 func removeRedundant(rules []string) []string {
@@ -82,4 +85,29 @@ func standardizePath(relativePath string) string {
 	}
 
 	return strings.Join(segs, "/")
+}
+
+// ================================================================
+func defaultDestHost(inputURL string) string {
+	parsedURL, err := url.Parse(inputURL)
+	if err != nil {
+		panic(err)
+	}
+
+	hostname := parsedURL.Hostname()
+
+	eTLDPlusOne, err := publicsuffix.EffectiveTLDPlusOne(hostname)
+	if err != nil {
+		panic(err)
+	}
+
+	parts := strings.SplitN(eTLDPlusOne, ".", 2)
+	if len(parts) < 2 {
+		panic("invalid domain structure")
+	}
+
+	subParts := strings.Split(parts[0], ".")
+	secondLevelDomain := subParts[len(subParts)-1]
+
+	return "http://" + secondLevelDomain
 }

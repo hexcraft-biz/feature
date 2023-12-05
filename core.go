@@ -121,15 +121,15 @@ func (d Dogmas) Register() {
 }
 
 // For api-proxy to check
-func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
+func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.UUID) (*ResultDestination, her.Error) {
 	if scope == "" {
-		return false, her.ErrForbidden
+		return nil, her.ErrForbidden
 	}
 	return d.canBeAccessedBy(strings.Split(scope, " "), method, endpointUrl, requesterId)
 }
 
-func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (bool, her.Error) {
-	u := d.HostUrl.JoinPath("/permissions/v1/endpoints")
+func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*ResultDestination, her.Error) {
+	u := d.HostUrl.JoinPath("/routes/v1/endpoints")
 	q := u.Query()
 	if scopes != nil {
 		q.Set("scopes", strings.Join(scopes, " "))
@@ -141,24 +141,25 @@ func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, req
 	}
 	u.RawQuery = q.Encode()
 
-	result := new(ResultAccessPermission)
+	result := new(ResultDestination)
 	payload := her.NewPayload(result)
 
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return false, her.NewError(http.StatusInternalServerError, err, nil)
+		return nil, her.NewError(http.StatusInternalServerError, err, nil)
 	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
-		return false, err
+		return nil, err
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		return result.CanAccess, nil
+		return result, nil
 	default:
-		return false, her.NewErrorWithMessage(http.StatusInternalServerError, "Dogmas: "+payload.Message, nil)
+		return nil, her.NewErrorWithMessage(resp.StatusCode, payload.Message, nil)
 	}
 }
 
-type ResultAccessPermission struct {
-	CanAccess bool `json:"canAccess"`
+type ResultDestination struct {
+	Method string `json:"method"`
+	Url    string `json:"url"`
 }

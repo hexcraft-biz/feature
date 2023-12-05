@@ -16,6 +16,7 @@ func newEndpoint(ownership, method, urlHost, urlFeature, urlPath string) *Endpoi
 	return &Endpoint{
 		Ownership:  ownership,
 		Method:     method,
+		DestHost:   defaultDestHost(urlHost),
 		UrlHost:    urlHost,
 		UrlFeature: urlFeature,
 		UrlPath:    urlPath,
@@ -27,6 +28,7 @@ type Endpoint struct {
 	Actived    bool       `json:"actived" db:"actived" binding:"-"`
 	Ownership  string     `json:"ownership" db:"ownership" binding:"required"`
 	Method     string     `json:"method" db:"method" binding:"required"`
+	DestHost   string     `json:"destHost" db:"dest_host" binding:"required"`
 	UrlHost    string     `json:"urlHost" db:"url_host" binding:"required"`
 	UrlFeature string     `json:"urlFeature" db:"url_feature" binding:"required"`
 	UrlPath    string     `json:"urlPath" db:"url_path" binding:"required"`
@@ -42,8 +44,9 @@ func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer 
 }
 
 // For resource to check
-func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, requestUrlPath string) (bool, her.Error) {
-	return e.Dogmas.canBeAccessedBy(nil, e.Method, e.UrlHost+path.Join("/", e.UrlFeature, requestUrlPath), &requesterId)
+func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, requestUrlPath string) her.Error {
+	_, err := e.Dogmas.canBeAccessedBy(nil, e.Method, e.UrlHost+path.Join("/", e.UrlFeature, requestUrlPath), &requesterId)
+	return err
 }
 
 // ================================================================
