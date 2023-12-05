@@ -96,6 +96,7 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 	return &RequestedEndpointHandler{
 		Endpoint: &Endpoint{
 			Method:     method,
+			DestHost:   defaultDestHost(urlHost),
 			UrlHost:    urlHost,
 			UrlFeature: urlFeature,
 			UrlPath:    strings.Join(segs, "/"),
