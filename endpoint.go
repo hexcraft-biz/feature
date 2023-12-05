@@ -96,6 +96,7 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 			UrlFeature: urlFeature,
 			UrlPath:    strings.Join(segs, "/"),
 		},
+		RequestedPath:         requestedPath,
 		SubsetToCheck:         strings.Join(subsetSegs, "/"),
 		possibleOwnerIdString: possibleOwnerIdString,
 	}, nil
@@ -103,6 +104,7 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 
 type RequestedEndpointHandler struct {
 	*Endpoint
+	RequestedPath         string
 	SubsetToCheck         string
 	possibleOwnerIdString string
 }
