@@ -89,25 +89,32 @@ func standardizePath(relativePath string) string {
 
 // ================================================================
 func defaultDestHost(inputURL string) string {
-	parsedURL, err := url.Parse(inputURL)
+	u, err := url.Parse(inputURL)
 	if err != nil {
 		panic(err)
 	}
 
-	hostname := parsedURL.Hostname()
+	host := ""
+	if u.Path != "" {
+		segs := strings.Split(u.Path, "/")
+		host = segs[len(segs)-1]
+	} else {
 
-	eTLDPlusOne, err := publicsuffix.EffectiveTLDPlusOne(hostname)
-	if err != nil {
-		panic(err)
+		hostname := u.Hostname()
+
+		eTLDPlusOne, err := publicsuffix.EffectiveTLDPlusOne(hostname)
+		if err != nil {
+			panic(err)
+		}
+
+		parts := strings.SplitN(eTLDPlusOne, ".", 2)
+		if len(parts) < 2 {
+			panic("invalid domain structure")
+		}
+
+		subParts := strings.Split(parts[0], ".")
+		host = subParts[len(subParts)-1]
 	}
 
-	parts := strings.SplitN(eTLDPlusOne, ".", 2)
-	if len(parts) < 2 {
-		panic("invalid domain structure")
-	}
-
-	subParts := strings.Split(parts[0], ".")
-	secondLevelDomain := subParts[len(subParts)-1]
-
-	return "http://" + secondLevelDomain
+	return "http://" + host
 }
