@@ -89,6 +89,10 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 		}
 	}
 
+	if u.RawQuery != "" {
+		requestedPath += "?" + u.RawQuery
+	}
+
 	return &RequestedEndpointHandler{
 		Endpoint: &Endpoint{
 			Method:     method,
@@ -115,4 +119,16 @@ func (h RequestedEndpointHandler) GetOwnerId() (xuuid.UUID, error) {
 	} else {
 		return xuuid.UUID(uuid.Nil), errors.New("invalid ownership endpoint")
 	}
+}
+
+func (h RequestedEndpointHandler) Route() *Route {
+	return &Route{
+		Method: h.Method,
+		Url:    h.DestHost + path.Join("/", h.UrlFeature, h.RequestedPath),
+	}
+}
+
+type Route struct {
+	Method string `json:"method"`
+	Url    string `json:"url"`
 }
