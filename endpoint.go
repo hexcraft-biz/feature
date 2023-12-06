@@ -40,6 +40,10 @@ type EndpointHandler struct {
 }
 
 func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer {
+	if e.Ownership != "ORGANIZATION" && e.Ownership != "PRIVATE" {
+		return nil
+	}
+
 	return newAuthorizer(e.Dogmas.HostUrl, custodianId, e.EndpointId)
 }
 
