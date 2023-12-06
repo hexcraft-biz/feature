@@ -109,6 +109,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 					e.UrlPath == r.UrlPath {
 					e.EndpointId = r.EndpointId
 					e.DestHost = r.DestHost
+					e.Actived = r.Actived
 					delete(endpoints, e)
 				}
 			}
@@ -123,7 +124,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 func (h ScopesHandler) HasUnsynchronized() bool {
 	for _, se := range h.Maps {
 		for _, e := range se.Endpoints {
-			if e.EndpointId.IsZero() {
+			if !e.Actived || e.EndpointId.IsZero() {
 				return true
 			}
 		}
