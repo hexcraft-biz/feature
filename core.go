@@ -160,6 +160,8 @@ func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, req
 }
 
 type ResultDestination struct {
-	Method string `json:"method"`
-	Url    string `json:"url"`
+	Method  string `json:"method"`
+	Host    string `json:"host"`
+	Feature string `json:"feature"`
+	Path    string `json:"path"`
 }
