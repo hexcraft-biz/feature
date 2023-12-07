@@ -121,14 +121,14 @@ func (d Dogmas) Register() {
 }
 
 // For api-proxy to check
-func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.UUID) (*ResultDestination, her.Error) {
+func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
 	if scope == "" {
 		return nil, her.ErrForbidden
 	}
 	return d.canBeAccessedBy(strings.Split(scope, " "), method, endpointUrl, requesterId)
 }
 
-func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*ResultDestination, her.Error) {
+func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
 	u := d.HostUrl.JoinPath("/routes/v1/endpoints")
 	q := u.Query()
 	if scopes != nil {
@@ -141,7 +141,7 @@ func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, req
 	}
 	u.RawQuery = q.Encode()
 
-	result := new(ResultDestination)
+	result := new(Route)
 	payload := her.NewPayload(result)
 
 	resp, err := http.Get(u.String())
@@ -157,12 +157,4 @@ func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, req
 	default:
 		return nil, her.NewErrorWithMessage(resp.StatusCode, payload.Message, nil)
 	}
-}
-
-type ResultDestination struct {
-	Method  string `json:"method"`
-	Scheme  string `json:"scheme"`
-	Host    string `json:"host"`
-	Feature string `json:"feature"`
-	Path    string `json:"path"`
 }

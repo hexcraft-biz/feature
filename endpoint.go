@@ -128,12 +128,16 @@ func (h RequestedEndpointHandler) GetOwnerId() (xuuid.UUID, error) {
 
 func (h RequestedEndpointHandler) Route() *Route {
 	return &Route{
-		Method: h.Method,
-		Url:    h.DestHost + path.Join("/", h.UrlFeature, h.RequestedPath),
+		Method:  h.Method,
+		RootUrl: h.DestHost,
+		Feature: h.UrlFeature,
+		Path:    h.RequestedPath,
 	}
 }
 
 type Route struct {
-	Method string `json:"method"`
-	Url    string `json:"url"`
+	Method  string `json:"method"`
+	RootUrl string `json:"rootUrl"`
+	Feature string `json:"feature"`
+	Path    string `json:"path"`
 }
