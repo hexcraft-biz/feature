@@ -11,9 +11,9 @@ import (
 	"github.com/hexcraft-biz/her"
 )
 
-func newScopesHandler(dogmasHostUrl *url.URL) ScopesHandler {
+func newScopesHandler(dogmasRootUrl *url.URL) ScopesHandler {
 	return ScopesHandler{
-		dogmasHostUrl: dogmasHostUrl,
+		dogmasRootUrl: dogmasRootUrl,
 		Maps: Maps{
 			"": newScopeWithEndpoints("", ""),
 		},
@@ -23,7 +23,7 @@ func newScopesHandler(dogmasHostUrl *url.URL) ScopesHandler {
 type Maps map[string]*scopeWithEndpoints
 
 type ScopesHandler struct {
-	dogmasHostUrl *url.URL
+	dogmasRootUrl *url.URL
 	Maps
 }
 
@@ -55,7 +55,7 @@ func (h ScopesHandler) register() error {
 			return err
 		}
 
-		req, err := http.NewRequest("POST", h.dogmasHostUrl.JoinPath("/resources/v1/scopes").String(), bytes.NewReader(jsonbytes))
+		req, err := http.NewRequest("POST", h.dogmasRootUrl.JoinPath("/resources/v1/scopes").String(), bytes.NewReader(jsonbytes))
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		}
 	}
 
-	u := h.dogmasHostUrl.JoinPath("/resources/v1/endpoints")
+	u := h.dogmasRootUrl.JoinPath("/resources/v1/endpoints")
 	q := u.Query()
 	q.Set("host", appRootUrl.String())
 	u.RawQuery = q.Encode()

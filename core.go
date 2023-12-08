@@ -87,20 +87,20 @@ const (
 
 type Dogmas struct {
 	init       *bool
-	HostUrl    *url.URL
+	RootUrl    *url.URL
 	AppRootUrl *url.URL
 	ScopesHandler
 }
 
 func NewDogmas(appRootUrl *url.URL) (*Dogmas, error) {
-	u, err := url.ParseRequestURI(os.Getenv("HOST_DOGMAS"))
+	u, err := url.ParseRequestURI(os.Getenv("APP_DOGMAS"))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Dogmas{
 		init:          flag.Bool(FlagInit, false, FlagInitDescription),
-		HostUrl:       u,
+		RootUrl:       u,
 		AppRootUrl:    appRootUrl,
 		ScopesHandler: newScopesHandler(u),
 	}, nil
@@ -129,7 +129,7 @@ func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.
 }
 
 func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
-	u := d.HostUrl.JoinPath("/routes/v1/endpoints")
+	u := d.RootUrl.JoinPath("/routes/v1/endpoints")
 	q := u.Query()
 	if scopes != nil {
 		q.Set("scopes", strings.Join(scopes, " "))
