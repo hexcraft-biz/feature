@@ -104,11 +104,11 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		for _, r := range result.Endpoints {
 			for e := range endpoints {
 				if e.Method == r.Method &&
-					e.UrlHost == r.UrlHost &&
-					e.UrlFeature == r.UrlFeature &&
-					e.UrlPath == r.UrlPath {
+					e.SrcApp == r.SrcApp &&
+					e.AppFeature == r.AppFeature &&
+					e.AppPath == r.AppPath {
 					e.EndpointId = r.EndpointId
-					e.DestHost = r.DestHost
+					e.DstApp = r.DstApp
 					e.Actived = r.Actived
 					delete(endpoints, e)
 				}

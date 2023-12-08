@@ -12,14 +12,14 @@ import (
 	"github.com/hexcraft-biz/xuuid"
 )
 
-func newEndpoint(ownership, method, urlHost, urlFeature, urlPath string) *Endpoint {
+func newEndpoint(ownership, method, srcApp, appFeature, appPath string) *Endpoint {
 	return &Endpoint{
 		Ownership:  ownership,
 		Method:     method,
-		DestHost:   defaultDestHost(urlHost),
-		UrlHost:    urlHost,
-		UrlFeature: urlFeature,
-		UrlPath:    urlPath,
+		DstApp:     defaultDestHost(srcApp),
+		SrcApp:     srcApp,
+		AppFeature: appFeature,
+		AppPath:    appPath,
 	}
 }
 
@@ -28,10 +28,10 @@ type Endpoint struct {
 	Actived    bool       `json:"actived" db:"actived" binding:"-"`
 	Ownership  string     `json:"ownership" db:"ownership" binding:"required"`
 	Method     string     `json:"method" db:"method" binding:"required"`
-	DestHost   string     `json:"destHost" db:"dest_host" binding:"required"`
-	UrlHost    string     `json:"urlHost" db:"url_host" binding:"required"`
-	UrlFeature string     `json:"urlFeature" db:"url_feature" binding:"required"`
-	UrlPath    string     `json:"urlPath" db:"url_path" binding:"required"`
+	DstApp     string     `json:"dstApp" db:"dst_app" binding:"required"`
+	SrcApp     string     `json:"srcApp" db:"src_app" binding:"required"`
+	AppFeature string     `json:"appFeature" db:"app_feature" binding:"required"`
+	AppPath    string     `json:"appPath" db:"app_path" binding:"required"`
 }
 
 type EndpointHandler struct {
@@ -49,7 +49,7 @@ func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer 
 
 // For resource to check
 func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, requestUrlPath string) her.Error {
-	_, err := e.Dogmas.canBeAccessedBy(nil, e.Method, e.UrlHost+path.Join("/", e.UrlFeature, requestUrlPath), &requesterId)
+	_, err := e.Dogmas.canBeAccessedBy(nil, e.Method, e.SrcApp+path.Join("/", e.AppFeature, requestUrlPath), &requesterId)
 	return err
 }
 
@@ -69,15 +69,15 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 		return nil, errors.New("Invalid endpoint")
 	}
 
-	urlHost, appRoot := u.Scheme+"://", u.Host
-	urlFeature, requestedPath := u.Path[0:loc[1]], u.Path[loc[1]:]
+	srcApp, appHost := u.Scheme+"://", u.Host
+	appFeature, requestedPath := u.Path[0:loc[1]], u.Path[loc[1]:]
 
-	segs := strings.Split(urlFeature, "/")
+	segs := strings.Split(appFeature, "/")
 	if len(segs) > 3 {
-		appRoot = path.Join(appRoot, strings.Join(segs[0:len(segs)-2], "/"))
-		urlFeature = path.Join("/", strings.Join(segs[len(segs)-2:], "/"))
+		appHost = path.Join(appHost, strings.Join(segs[0:len(segs)-2], "/"))
+		appFeature = path.Join("/", strings.Join(segs[len(segs)-2:], "/"))
 	}
-	urlHost += appRoot
+	srcApp += appHost
 
 	segs = strings.Split(requestedPath, "/")
 	subsetSegs := []string{""}
@@ -100,10 +100,10 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 	return &RequestedEndpointHandler{
 		Endpoint: &Endpoint{
 			Method:     method,
-			DestHost:   defaultDestHost(urlHost),
-			UrlHost:    urlHost,
-			UrlFeature: urlFeature,
-			UrlPath:    strings.Join(segs, "/"),
+			DstApp:     defaultDestHost(srcApp),
+			SrcApp:     srcApp,
+			AppFeature: appFeature,
+			AppPath:    strings.Join(segs, "/"),
 		},
 		RequestedPath:         requestedPath,
 		SubsetToCheck:         strings.Join(subsetSegs, "/"),
@@ -129,8 +129,8 @@ func (h RequestedEndpointHandler) GetOwnerId() (xuuid.UUID, error) {
 func (h RequestedEndpointHandler) Route() *Route {
 	return &Route{
 		Method:  h.Method,
-		RootUrl: h.DestHost,
-		Feature: h.UrlFeature,
+		RootUrl: h.DstApp,
+		Feature: h.AppFeature,
 		Path:    h.RequestedPath,
 	}
 }
