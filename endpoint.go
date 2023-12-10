@@ -14,24 +14,27 @@ import (
 
 func newEndpoint(ownership, method, srcApp, appFeature, appPath string) *Endpoint {
 	return &Endpoint{
-		Ownership:  ownership,
-		Method:     method,
-		DstApp:     defaultDestHost(srcApp),
-		SrcApp:     srcApp,
-		AppFeature: appFeature,
-		AppPath:    appPath,
+		Actived:     true,
+		FullProxied: true,
+		Ownership:   ownership,
+		Method:      method,
+		DstApp:      defaultDestHost(srcApp),
+		SrcApp:      srcApp,
+		AppFeature:  appFeature,
+		AppPath:     appPath,
 	}
 }
 
 type Endpoint struct {
-	EndpointId xuuid.UUID `json:"endpointId" db:"endpoint_id" binding:"-"`
-	Actived    bool       `json:"actived" db:"actived" binding:"-"`
-	Ownership  string     `json:"ownership" db:"ownership" binding:"required"`
-	Method     string     `json:"method" db:"method" binding:"required"`
-	DstApp     string     `json:"dstApp" db:"dst_app" binding:"required"`
-	SrcApp     string     `json:"srcApp" db:"src_app" binding:"required"`
-	AppFeature string     `json:"appFeature" db:"app_feature" binding:"required"`
-	AppPath    string     `json:"appPath" db:"app_path" binding:"required"`
+	EndpointId  xuuid.UUID `json:"endpointId" db:"endpoint_id" binding:"-"`
+	Actived     bool       `json:"actived" db:"actived" binding:"-"`
+	FullProxied bool       `json:"fullProxied" db:"full_proxied" binding:"-"`
+	Ownership   string     `json:"ownership" db:"ownership" binding:"required"`
+	Method      string     `json:"method" db:"method" binding:"required"`
+	DstApp      string     `json:"dstApp" db:"dst_app" binding:"required"`
+	SrcApp      string     `json:"srcApp" db:"src_app" binding:"required"`
+	AppFeature  string     `json:"appFeature" db:"app_feature" binding:"required"`
+	AppPath     string     `json:"appPath" db:"app_path" binding:"required"`
 }
 
 type EndpointHandler struct {

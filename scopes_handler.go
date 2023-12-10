@@ -108,8 +108,9 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 					e.AppFeature == r.AppFeature &&
 					e.AppPath == r.AppPath {
 					e.EndpointId = r.EndpointId
-					e.DstApp = r.DstApp
 					e.Actived = r.Actived
+					e.FullProxied = r.FullProxied
+					e.DstApp = r.DstApp
 					delete(endpoints, e)
 				}
 			}
