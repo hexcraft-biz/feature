@@ -14,7 +14,7 @@ import (
 
 func newEndpoint(ownership, method, srcApp, appFeature, appPath string) *Endpoint {
 	return &Endpoint{
-		Actived:     true,
+		Activated:   true,
 		FullProxied: true,
 		Ownership:   ownership,
 		Method:      method,
@@ -27,7 +27,7 @@ func newEndpoint(ownership, method, srcApp, appFeature, appPath string) *Endpoin
 
 type Endpoint struct {
 	EndpointId  xuuid.UUID `json:"endpointId" db:"endpoint_id" binding:"-"`
-	Actived     bool       `json:"actived" db:"actived" binding:"-"`
+	Activated   bool       `json:"activated" db:"activated" binding:"-"`
 	FullProxied bool       `json:"fullProxied" db:"full_proxied" binding:"-"`
 	Ownership   string     `json:"ownership" db:"ownership" binding:"required"`
 	Method      string     `json:"method" db:"method" binding:"required"`
