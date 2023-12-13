@@ -10,16 +10,16 @@ import (
 	"github.com/hexcraft-biz/xuuid"
 )
 
-func newAuthorizer(dogmasHost *url.URL, custodianId, viaEndpointId xuuid.UUID) *Authorizer {
+func newAuthorizer(appCreeds *url.URL, custodianId, viaEndpointId xuuid.UUID) *Authorizer {
 	return &Authorizer{
-		dogmasApiUrl:        dogmasHost.JoinPath("/permissions/v1/custodians", custodianId.String()),
+		creedsApiUrl:        appCreeds.JoinPath("/permissions/v1/custodians", custodianId.String()),
 		viaEndpointId:       viaEndpointId,
 		accessRulesToCommit: accessRulesToCommit{},
 	}
 }
 
 type Authorizer struct {
-	dogmasApiUrl  *url.URL
+	creedsApiUrl  *url.URL
 	viaEndpointId xuuid.UUID
 	accessRulesToCommit
 }
@@ -40,7 +40,7 @@ func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
 			return her.NewError(http.StatusInternalServerError, err, nil)
 		}
 
-		req, err := http.NewRequest("POST", u.dogmasApiUrl.String(), bytes.NewReader(jsonbytes))
+		req, err := http.NewRequest("POST", u.creedsApiUrl.String(), bytes.NewReader(jsonbytes))
 		if err != nil {
 			return her.NewError(http.StatusInternalServerError, err, nil)
 		}

@@ -47,7 +47,7 @@ func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer 
 		return nil
 	}
 
-	return newAuthorizer(e.Dogmas.RootUrl, custodianId, e.EndpointId)
+	return newAuthorizer(e.Dogmas.CreedsRootUrl, custodianId, e.EndpointId)
 }
 
 // For resource to check

@@ -86,23 +86,30 @@ const (
 )
 
 type Dogmas struct {
-	init       *bool
-	RootUrl    *url.URL
-	AppRootUrl *url.URL
+	init          *bool
+	RootUrl       *url.URL
+	CreedsRootUrl *url.URL
+	AppRootUrl    *url.URL // the application which import this module.
 	ScopesHandler
 }
 
 func NewDogmas(appRootUrl *url.URL) (*Dogmas, error) {
-	u, err := url.ParseRequestURI(os.Getenv("APP_DOGMAS"))
+	uDogmas, err := url.ParseRequestURI(os.Getenv("APP_DOGMAS"))
+	if err != nil {
+		return nil, err
+	}
+
+	uCreeds, err := url.ParseRequestURI(os.Getenv("APP_CREEDS"))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Dogmas{
 		init:          flag.Bool(FlagInit, false, FlagInitDescription),
-		RootUrl:       u,
+		RootUrl:       uDogmas,
+		CreedsRootUrl: uCreeds,
 		AppRootUrl:    appRootUrl,
-		ScopesHandler: newScopesHandler(u),
+		ScopesHandler: newScopesHandler(uDogmas),
 	}, nil
 }
 
