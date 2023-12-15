@@ -10,26 +10,41 @@ type PrivateAssets struct {
 }
 
 func (m *PrivateAssets) GET(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(OwnershipPrivate, "GET", relativePath, scopes)
-	return m.RouterGroup.GET(relativePath, handlerFuncs(e, handlers)...)
+	eh := m.addEndpoint(OwnershipPrivate, "GET", relativePath, scopes)
+	if m.RouterGroup == nil {
+		return nil
+	}
+	return m.RouterGroup.GET(relativePath, handlerFuncs(eh, handlers)...)
 }
 
 func (m *PrivateAssets) POST(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(OwnershipPrivate, "POST", relativePath, scopes)
-	return m.RouterGroup.POST(relativePath, handlerFuncs(e, handlers)...)
+	eh := m.addEndpoint(OwnershipPrivate, "POST", relativePath, scopes)
+	if m.RouterGroup == nil {
+		return nil
+	}
+	return m.RouterGroup.POST(relativePath, handlerFuncs(eh, handlers)...)
 }
 
 func (m *PrivateAssets) PUT(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(OwnershipPrivate, "PUT", relativePath, scopes)
-	return m.RouterGroup.PUT(relativePath, handlerFuncs(e, handlers)...)
+	eh := m.addEndpoint(OwnershipPrivate, "PUT", relativePath, scopes)
+	if m.RouterGroup == nil {
+		return nil
+	}
+	return m.RouterGroup.PUT(relativePath, handlerFuncs(eh, handlers)...)
 }
 
 func (m *PrivateAssets) PATCH(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(OwnershipPrivate, "PATCH", relativePath, scopes)
-	return m.RouterGroup.PATCH(relativePath, handlerFuncs(e, handlers)...)
+	eh := m.addEndpoint(OwnershipPrivate, "PATCH", relativePath, scopes)
+	if m.RouterGroup == nil {
+		return nil
+	}
+	return m.RouterGroup.PATCH(relativePath, handlerFuncs(eh, handlers)...)
 }
 
 func (m *PrivateAssets) DELETE(relativePath string, scopes []string, handlers ...HandlerFunc) gin.IRoutes {
-	e := m.addEndpoint(OwnershipPrivate, "DELETE", relativePath, scopes)
-	return m.RouterGroup.DELETE(relativePath, handlerFuncs(e, handlers)...)
+	eh := m.addEndpoint(OwnershipPrivate, "DELETE", relativePath, scopes)
+	if m.RouterGroup == nil {
+		return nil
+	}
+	return m.RouterGroup.DELETE(relativePath, handlerFuncs(eh, handlers)...)
 }

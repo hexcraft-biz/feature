@@ -29,15 +29,15 @@ func handlerFuncs(e *EndpointHandler, handlers []HandlerFunc) []gin.HandlerFunc 
 //
 // ================================================================
 type Feature struct {
-	FeaturePath string
 	*gin.RouterGroup
+	FeaturePath string
 	*Dogmas
 }
 
 func New(e *gin.Engine, featurePath string, d *Dogmas) *Feature {
 	return &Feature{
-		FeaturePath: featurePath,
 		RouterGroup: e.Group(featurePath),
+		FeaturePath: featurePath,
 		Dogmas:      d,
 	}
 }
@@ -60,6 +60,7 @@ func (f *Feature) PublicAssets() *PublicAssets {
 	}
 }
 
+// ================================================================
 func (f *Feature) addEndpoint(ownership, method, relativePath string, scopes []string) *EndpointHandler {
 	e := newEndpoint(ownership, method, f.Dogmas.AppRootUrl.String(), f.FeaturePath, standardizePath(relativePath))
 
