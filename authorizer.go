@@ -10,17 +10,15 @@ import (
 	"github.com/hexcraft-biz/xuuid"
 )
 
-func newAuthorizer(appCreeds *url.URL, custodianId, viaEndpointId xuuid.UUID) *Authorizer {
+func newAuthorizer(appCreeds *url.URL, custodianId xuuid.UUID) *Authorizer {
 	return &Authorizer{
 		creedsApiUrl:        appCreeds.JoinPath("/permissions/v1/custodians", custodianId.String()),
-		viaEndpointId:       viaEndpointId,
 		accessRulesToCommit: accessRulesToCommit{},
 	}
 }
 
 type Authorizer struct {
-	creedsApiUrl  *url.URL
-	viaEndpointId xuuid.UUID
+	creedsApiUrl *url.URL
 	accessRulesToCommit
 }
 
@@ -31,7 +29,11 @@ func (u *Authorizer) AffectedEndpoint(affectedEndpointId xuuid.UUID) *affectedEn
 	}
 }
 
-func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
+func (u Authorizer) Commit(byCustodianId xuuid.UUID, headerInfix string) her.Error {
+	if headerInfix == "" {
+		return her.NewErrorWithMessage(http.StatusInternalServerError, "Header infix cannot be empty", nil)
+	}
+
 	rulesWithBehavior := u.toAccessRulesWithBehavior()
 
 	if len(rulesWithBehavior) > 0 {
@@ -45,8 +47,7 @@ func (u Authorizer) Commit(byCustodianId xuuid.UUID) her.Error {
 			return her.NewError(http.StatusInternalServerError, err, nil)
 		}
 
-		req.Header.Set(HeaderViaEndpointId, u.viaEndpointId.String())
-		req.Header.Set(HeaderByCustodianId, byCustodianId.String())
+		req.Header.Set("X-"+headerInfix+"-Authenticated-User-Id", byCustodianId.String())
 
 		payload := her.NewPayload(nil)
 		client := &http.Client{}
