@@ -30,13 +30,15 @@ func handlerFuncs(e *EndpointHandler, handlers []HandlerFunc) []gin.HandlerFunc 
 // ================================================================
 type Feature struct {
 	*gin.RouterGroup
+	AppRootUrl  *url.URL
 	FeaturePath string
 	*Dogmas
 }
 
-func New(e *gin.Engine, featurePath string, d *Dogmas) *Feature {
+func New(e *gin.Engine, appRootUrl *url.URL, featurePath string, d *Dogmas) *Feature {
 	return &Feature{
 		RouterGroup: e.Group(featurePath),
+		AppRootUrl:  appRootUrl,
 		FeaturePath: featurePath,
 		Dogmas:      d,
 	}
@@ -62,7 +64,7 @@ func (f *Feature) PublicAssets() *PublicAssets {
 
 // ================================================================
 func (f *Feature) addEndpoint(ownership, method, relativePath string, scopes []string) *EndpointHandler {
-	e := newEndpoint(ownership, method, f.Dogmas.AppRootUrl.String(), f.FeaturePath, standardizePath(relativePath))
+	e := newEndpoint(ownership, method, f.AppRootUrl.String(), f.FeaturePath, standardizePath(relativePath))
 
 	if len(scopes) > 0 {
 		for _, identifier := range scopes {
@@ -90,11 +92,10 @@ type Dogmas struct {
 	init          *bool
 	RootUrl       *url.URL
 	CreedsRootUrl *url.URL
-	AppRootUrl    *url.URL // the application which import this module.
 	ScopesHandler
 }
 
-func NewDogmas(appRootUrl *url.URL) (*Dogmas, error) {
+func NewDogmas() (*Dogmas, error) {
 	uDogmas, err := url.ParseRequestURI(os.Getenv("APP_DOGMAS"))
 	if err != nil {
 		return nil, err
@@ -109,7 +110,6 @@ func NewDogmas(appRootUrl *url.URL) (*Dogmas, error) {
 		init:          flag.Bool(FlagInit, false, FlagInitDescription),
 		RootUrl:       uDogmas,
 		CreedsRootUrl: uCreeds,
-		AppRootUrl:    appRootUrl,
 		ScopesHandler: newScopesHandler(uDogmas),
 	}, nil
 }
