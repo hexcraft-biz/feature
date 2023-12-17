@@ -36,8 +36,13 @@ type Feature struct {
 }
 
 func New(e *gin.Engine, appRootUrl *url.URL, featurePath string, d *Dogmas) *Feature {
+	var group *gin.RouterGroup
+	if e != nil {
+		group = e.Group(featurePath)
+	}
+
 	return &Feature{
-		RouterGroup: e.Group(featurePath),
+		RouterGroup: group,
 		AppRootUrl:  appRootUrl,
 		FeaturePath: featurePath,
 		Dogmas:      d,
