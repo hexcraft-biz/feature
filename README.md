@@ -3,7 +3,8 @@ The blocks below are the env settings for the modules
 
 ## Dogmas
 ```bash
-HOST_DOGMAS=https://dogmas.example.com
+APP_DOGMAS=https://dogmas.example.com
+APP_CREEDS=https://creeds.example.com
 ```
 
 ## API Endpoint Rules
