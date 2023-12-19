@@ -94,14 +94,20 @@ const (
 )
 
 type Dogmas struct {
-	init          *bool
-	RootUrl       *url.URL
-	CreedsRootUrl *url.URL
+	init             *bool
+	DogmasRootUrl    *url.URL
+	DoctrinesRootUrl *url.URL
+	CreedsRootUrl    *url.URL
 	ScopesHandler
 }
 
 func NewDogmas() (*Dogmas, error) {
 	uDogmas, err := url.ParseRequestURI(os.Getenv("APP_DOGMAS"))
+	if err != nil {
+		return nil, err
+	}
+
+	uDoctrines, err := url.ParseRequestURI(os.Getenv("APP_DOCTRINES"))
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +118,11 @@ func NewDogmas() (*Dogmas, error) {
 	}
 
 	return &Dogmas{
-		init:          flag.Bool(FlagInit, false, FlagInitDescription),
-		RootUrl:       uDogmas,
-		CreedsRootUrl: uCreeds,
-		ScopesHandler: newScopesHandler(uDogmas),
+		init:             flag.Bool(FlagInit, false, FlagInitDescription),
+		DogmasRootUrl:    uDogmas,
+		DoctrinesRootUrl: uDoctrines,
+		CreedsRootUrl:    uCreeds,
+		ScopesHandler:    newScopesHandler(uDogmas),
 	}, nil
 }
 
@@ -138,11 +145,11 @@ func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.
 	if scope == "" {
 		return nil, her.ErrForbidden
 	}
-	return d.canBeAccessedBy(strings.Split(scope, " "), method, endpointUrl, requesterId)
+	return canBeAccessedBy(d.DoctrinesRootUrl, strings.Split(scope, " "), method, endpointUrl, requesterId)
 }
 
-func (d Dogmas) canBeAccessedBy(scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
-	u := d.RootUrl.JoinPath("/routes/v1/endpoints")
+func canBeAccessedBy(rootUrl *url.URL, scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
+	u := rootUrl.JoinPath("/routes/v1/endpoints")
 	q := u.Query()
 	if scopes != nil {
 		q.Set("scopes", strings.Join(scopes, " "))

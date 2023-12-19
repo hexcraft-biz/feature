@@ -52,7 +52,7 @@ func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer 
 
 // For resource to check
 func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, requestUrlPath string) her.Error {
-	_, err := e.Dogmas.canBeAccessedBy(nil, e.Method, e.SrcApp+path.Join("/", e.AppFeature, requestUrlPath), &requesterId)
+	_, err := canBeAccessedBy(e.Dogmas.DogmasRootUrl, nil, e.Method, e.SrcApp+path.Join("/", e.AppFeature, requestUrlPath), &requesterId)
 	return err
 }
 
