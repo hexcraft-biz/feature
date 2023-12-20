@@ -24,6 +24,7 @@ const (
 )
 
 const (
+	WriteBehaviorCreate     = "CREATE"
 	WriteBehaviorIdempotent = "IDEMPOTENT"
 	WriteBehaviorOverwrite  = "OVERWRITE"
 )
