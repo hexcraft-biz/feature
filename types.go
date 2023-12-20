@@ -69,6 +69,16 @@ type AccessRulesWithBehavior struct {
 	*AuthorizationAction
 }
 
+func NewAccessRulesWithBehavior(behavior string, affectedEndpointId xuuid.UUID, accessRules *AccessRules) *AccessRulesWithBehavior {
+	return &AccessRulesWithBehavior{
+		Behavior: behavior,
+		AuthorizationAction: &AuthorizationAction{
+			AffectedEndpointId: affectedEndpointId,
+			AccessRules:        accessRules,
+		},
+	}
+}
+
 type AuthorizationAction struct {
 	AffectedEndpointId xuuid.UUID   `json:"affectedEndpointId" db:"endpoint_id" binding:"required"`
 	AccessRules        *AccessRules `json:"accessRules" db:"access_rules" binding:"required"`
