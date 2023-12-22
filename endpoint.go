@@ -12,13 +12,13 @@ import (
 	"github.com/hexcraft-biz/xuuid"
 )
 
-func newEndpoint(ownership, method, srcApp, appFeature, appPath string) *Endpoint {
+func newEndpoint(ownership, method, dstApp, srcApp, appFeature, appPath string) *Endpoint {
 	return &Endpoint{
 		Activated:   true,
 		FullProxied: true,
 		Ownership:   ownership,
 		Method:      method,
-		DstApp:      defaultDestHost(srcApp),
+		DstApp:      dstApp,
 		SrcApp:      srcApp,
 		AppFeature:  appFeature,
 		AppPath:     appPath,
@@ -82,6 +82,11 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 	}
 	srcApp += appHost
 
+	dstApp, err := defaultDestHostByString(srcApp)
+	if err != nil {
+		return nil, err
+	}
+
 	segs = strings.Split(requestedPath, "/")
 	subsetSegs := []string{""}
 	possibleOwnerIdString := ""
@@ -103,7 +108,7 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 	return &RequestedEndpointHandler{
 		Endpoint: &Endpoint{
 			Method:     method,
-			DstApp:     defaultDestHost(srcApp),
+			DstApp:     dstApp,
 			SrcApp:     srcApp,
 			AppFeature: appFeature,
 			AppPath:    strings.Join(segs, "/"),

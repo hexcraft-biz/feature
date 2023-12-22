@@ -31,6 +31,7 @@ func handlerFuncs(e *EndpointHandler, handlers []HandlerFunc) []gin.HandlerFunc 
 type Feature struct {
 	*gin.RouterGroup
 	AppRootUrl  *url.URL
+	DstApp      string
 	FeaturePath string
 	*Dogmas
 }
@@ -44,6 +45,7 @@ func New(e *gin.Engine, appRootUrl *url.URL, featurePath string, d *Dogmas) *Fea
 	return &Feature{
 		RouterGroup: group,
 		AppRootUrl:  appRootUrl,
+		DstApp:      defaultDestHostByUrl(appRootUrl),
 		FeaturePath: featurePath,
 		Dogmas:      d,
 	}
@@ -69,7 +71,7 @@ func (f *Feature) PublicAssets() *PublicAssets {
 
 // ================================================================
 func (f *Feature) addEndpoint(ownership, method, relativePath string, scopes []string) *EndpointHandler {
-	e := newEndpoint(ownership, method, f.AppRootUrl.String(), f.FeaturePath, standardizePath(relativePath))
+	e := newEndpoint(ownership, method, f.DstApp, f.AppRootUrl.String(), f.FeaturePath, standardizePath(relativePath))
 
 	if len(scopes) > 0 {
 		for _, identifier := range scopes {
