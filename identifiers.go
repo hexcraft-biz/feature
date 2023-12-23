@@ -7,19 +7,15 @@ import (
 // ================================================================
 type Identifiers map[any]bool
 
-func NewIdentifiers(input any) Identifiers {
-	if reflect.TypeOf(input).Kind() != reflect.Slice {
-		return nil
-	}
-
-	items, ok := input.([]any)
-	if !ok {
+func NewIdentifiers(items any) Identifiers {
+	val := reflect.ValueOf(items)
+	if val.Kind() != reflect.Slice {
 		return nil
 	}
 
 	identifiers := Identifiers{}
-	for _, i := range items {
-		identifiers.Set(i)
+	for i := 0; i < val.Len(); i += 1 {
+		identifiers.Set(val.Index(i).Interface())
 	}
 
 	return identifiers
