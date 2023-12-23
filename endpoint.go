@@ -91,13 +91,13 @@ func (s RequestedUrlString) Parse(method string) (*RequestedEndpointHandler, err
 	subsetSegs := []string{""}
 	possibleOwnerIdString := ""
 	for i := range segs {
+		if i == 2 {
+			possibleOwnerIdString = segs[i]
+		}
+
 		if i > 0 && i%2 == 0 {
 			subsetSegs = append(subsetSegs, segs[i])
 			segs[i] = "*"
-		}
-
-		if i == 2 {
-			possibleOwnerIdString = segs[i]
 		}
 	}
 
