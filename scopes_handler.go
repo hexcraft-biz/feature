@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -122,16 +123,17 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 	return nil
 }
 
-func (h ScopesHandler) HasUnsynchronized() bool {
+func (h ScopesHandler) EndpointSyncError() her.Error {
 	for _, se := range h.Maps {
 		for _, e := range se.Endpoints {
 			if !e.Activated || e.EndpointId.IsZero() {
-				return true
+				msg := fmt.Sprintf("Unsynchronization error: %s%s%s", e.SrcApp, e.AppFeature, e.AppPath)
+				return her.NewErrorWithMessage(http.StatusInternalServerError, msg, nil)
 			}
 		}
 	}
 
-	return false
+	return nil
 }
 
 type resultSyncEndpoints struct {
