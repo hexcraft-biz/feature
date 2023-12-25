@@ -127,7 +127,7 @@ func (h ScopesHandler) EndpointSyncError() her.Error {
 	for _, se := range h.Maps {
 		for _, e := range se.Endpoints {
 			if !e.Activated || e.EndpointId.IsZero() {
-				msg := fmt.Sprintf("Unsynchronization error: %s%s%s", e.SrcApp, e.AppFeature, e.AppPath)
+				msg := fmt.Sprintf("Sync error: %s %s%s%s", e.Method, e.SrcApp, e.AppFeature, e.AppPath)
 				return her.NewErrorWithMessage(http.StatusInternalServerError, msg, nil)
 			}
 		}
