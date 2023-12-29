@@ -82,8 +82,8 @@ func (f *Feature) addEndpoint(ownership, method, relativePath string, scopes []s
 	}
 
 	return &EndpointHandler{
-		Dogmas:   f.Dogmas,
-		Endpoint: e,
+		dogmasRootUrl: f.Dogmas.RootUrl,
+		Endpoint:      e,
 	}
 }
 

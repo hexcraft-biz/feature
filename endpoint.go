@@ -38,13 +38,13 @@ type Endpoint struct {
 }
 
 type EndpointHandler struct {
-	*Dogmas `json:"-"`
+	dogmasRootUrl *url.URL `json:"-"`
 	*Endpoint
 }
 
 // For resource to check
 func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, requestUrlPath string) her.Error {
-	apiUrl := e.Dogmas.RootUrl.JoinPath("/access/v1/from-endpoint")
+	apiUrl := e.dogmasRootUrl.JoinPath("/access/v1/from-endpoint")
 	_, err := canBeAccessedBy(apiUrl, nil, e.Method, e.SrcApp+path.Join("/", e.AppFeature, requestUrlPath), &requesterId)
 	return err
 }
