@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/hexcraft-biz/envmod-mysql v0.0.34
 	github.com/hexcraft-biz/her v0.0.6
-	github.com/hexcraft-biz/xuuid v0.0.1
+	github.com/hexcraft-biz/xuuid v0.0.2
 	golang.org/x/net v0.19.0
 )
 
