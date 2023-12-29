@@ -96,10 +96,8 @@ const (
 )
 
 type Dogmas struct {
-	init             *bool
-	DogmasRootUrl    *url.URL
-	DoctrinesRootUrl *url.URL
-	CreedsRootUrl    *url.URL
+	init    *bool
+	RootUrl *url.URL
 	ScopesHandler
 }
 
@@ -109,22 +107,10 @@ func NewDogmas() (*Dogmas, error) {
 		return nil, err
 	}
 
-	uDoctrines, err := url.ParseRequestURI(os.Getenv("APP_DOCTRINES"))
-	if err != nil {
-		return nil, err
-	}
-
-	uCreeds, err := url.ParseRequestURI(os.Getenv("APP_CREEDS"))
-	if err != nil {
-		return nil, err
-	}
-
 	return &Dogmas{
-		init:             flag.Bool(FlagInit, false, FlagInitDescription),
-		DogmasRootUrl:    uDogmas,
-		DoctrinesRootUrl: uDoctrines,
-		CreedsRootUrl:    uCreeds,
-		ScopesHandler:    newScopesHandler(uDogmas),
+		init:          flag.Bool(FlagInit, false, FlagInitDescription),
+		RootUrl:       uDogmas,
+		ScopesHandler: newScopesHandler(uDogmas),
 	}, nil
 }
 
@@ -142,31 +128,39 @@ func (d Dogmas) Register() {
 	}
 }
 
-// For api-proxy to check
+// For proxy to check
 func (d Dogmas) CanAccess(scope, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
-	if scope == "" {
-		return nil, her.ErrForbidden
+	scopeSlice := []string{}
+	for _, s := range strings.Split(scope, ScopesDelimiter) {
+		if s != "" {
+			scopeSlice = append(scopeSlice, s)
+		}
 	}
-	return canBeAccessedBy(d.DoctrinesRootUrl, strings.Split(scope, " "), method, endpointUrl, requesterId)
+
+	if len(scopeSlice) <= 0 {
+		return nil, her.NewErrorWithMessage(http.StatusForbidden, "Invalid scope", nil)
+	}
+
+	apiUrl := d.RootUrl.JoinPath("/access/v1/from-proxy")
+	return canBeAccessedBy(apiUrl, strings.Split(scope, ScopesDelimiter), method, endpointUrl, requesterId)
 }
 
-func canBeAccessedBy(rootUrl *url.URL, scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
-	u := rootUrl.JoinPath("/routes/v1/endpoints")
-	q := u.Query()
+func canBeAccessedBy(apiUrl *url.URL, scopes []string, method, endpointUrl string, requesterId *xuuid.UUID) (*Route, her.Error) {
+	q := apiUrl.Query()
 	if scopes != nil {
-		q.Set("scopes", strings.Join(scopes, " "))
+		q.Set("scopes", strings.Join(scopes, ScopesDelimiter))
 	}
 	q.Set("method", method)
 	q.Set("url", endpointUrl)
 	if requesterId != nil {
 		q.Set("requester", requesterId.String())
 	}
-	u.RawQuery = q.Encode()
+	apiUrl.RawQuery = q.Encode()
 
 	result := new(Route)
 	payload := her.NewPayload(result)
 
-	resp, err := http.Get(u.String())
+	resp, err := http.Get(apiUrl.String())
 	if err != nil {
 		return nil, her.NewError(http.StatusInternalServerError, err, nil)
 	} else if err := her.FetchHexcApiResult(resp, payload); err != nil {

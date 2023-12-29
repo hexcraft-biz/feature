@@ -42,17 +42,10 @@ type EndpointHandler struct {
 	*Endpoint
 }
 
-func (e *EndpointHandler) SetAccessRulesFor(custodianId xuuid.UUID) *Authorizer {
-	if e.Ownership != "ORGANIZATION" && e.Ownership != "PRIVATE" {
-		return nil
-	}
-
-	return newAuthorizer(e.Dogmas.CreedsRootUrl, custodianId)
-}
-
 // For resource to check
 func (e EndpointHandler) CanBeAccessedBy(requesterId xuuid.UUID, requestUrlPath string) her.Error {
-	_, err := canBeAccessedBy(e.Dogmas.DogmasRootUrl, nil, e.Method, e.SrcApp+path.Join("/", e.AppFeature, requestUrlPath), &requesterId)
+	apiUrl := e.Dogmas.RootUrl.JoinPath("/access/v1/from-endpoint")
+	_, err := canBeAccessedBy(apiUrl, nil, e.Method, e.SrcApp+path.Join("/", e.AppFeature, requestUrlPath), &requesterId)
 	return err
 }
 
