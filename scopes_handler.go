@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 
 	paging "github.com/hexcraft-biz/envmod-mysql"
 	"github.com/hexcraft-biz/her"
@@ -76,6 +77,20 @@ func (h ScopesHandler) register() error {
 	return nil
 }
 
+func getDogmasUrl(appRootUrl, dogmasRootUrl *url.URL, nextUrlStr *string) string {
+	nextUrl, _ := url.Parse(*nextUrlStr)
+	dogmasUrl := dogmasRootUrl.JoinPath("")
+
+	dogmasUrl.Path = path.Join(dogmasUrl.Path, nextUrl.Path)
+	dogmasUrl.RawQuery = nextUrl.RawQuery
+
+	q := dogmasUrl.Query()
+	q.Set("app", appRootUrl.String())
+	dogmasUrl.RawQuery = q.Encode()
+
+	return dogmasUrl.String()
+}
+
 func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 	endpoints := map[*Endpoint]struct{}{}
 	for _, se := range h.Maps {
@@ -84,17 +99,13 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		}
 	}
 
-	u := h.dogmasRootUrl.JoinPath("/resources/v1/endpoints")
-	q := u.Query()
-	q.Set("host", appRootUrl.String())
-	u.RawQuery = q.Encode()
-
-	urlstring := u.String()
-	next := &urlstring
-	for next != nil {
+	pathString := "/resources/v1/endpoints"
+	nextUrlStr := &pathString
+	for nextUrlStr != nil {
 		result := new(resultSyncEndpoints)
 		payload := her.NewPayload(result)
-		if resp, err := http.Get(*next); err != nil {
+
+		if resp, err := http.Get(getDogmasUrl(appRootUrl, h.dogmasRootUrl, nextUrlStr)); err != nil {
 			return err
 		} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
 			return err
@@ -117,7 +128,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 			}
 		}
 
-		next = result.Paging.Next
+		nextUrlStr = result.Paging.Next
 	}
 
 	return nil
