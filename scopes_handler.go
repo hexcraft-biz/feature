@@ -89,6 +89,9 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 	q.Set("host", appRootUrl.String())
 	u.RawQuery = q.Encode()
 
+	count := 0
+	match := 0
+
 	urlstring := u.String()
 	next := &urlstring
 	for next != nil {
@@ -104,10 +107,12 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 
 		for _, r := range result.Endpoints {
 			for e := range endpoints {
+				count++
 				if e.Method == r.Method &&
 					e.SrcApp == r.SrcApp &&
 					e.AppFeature == r.AppFeature &&
 					e.AppPath == r.AppPath {
+					match++
 					e.EndpointId = r.EndpointId
 					e.Activated = r.Activated
 					e.FullProxied = r.FullProxied
@@ -119,6 +124,8 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 
 		next = result.Paging.Next
 	}
+
+	fmt.Println("Count :", count, match)
 
 	return nil
 }
