@@ -133,8 +133,10 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		*/
 
 		for _, r := range result.Endpoints {
+			count += 1
+			log.Println("List endpoint: ", r.Method, r.SrcApp, r.AppFeature, r.AppPath)
+
 			for _, e := range endpoints {
-				count += 1
 				if e.Method == r.Method && e.SrcApp == r.SrcApp && e.AppFeature == r.AppFeature && e.AppPath == r.AppPath {
 					match += 1
 					e.EndpointId = r.EndpointId
