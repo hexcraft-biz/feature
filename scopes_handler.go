@@ -148,7 +148,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		}
 
 		log.Println("Count from feature: ", count, match)
-		log.Println("Next Log: ", result.Paging.Next)
+		log.Println("Next Log: ", (*result.Paging.Next))
 
 		next = result.Paging.Next
 	}
