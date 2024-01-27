@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -77,10 +78,19 @@ func (h ScopesHandler) register() error {
 }
 
 func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
-	endpoints := map[*Endpoint]struct{}{}
+	/*
+		endpoints := map[*Endpoint]struct{}{}
+		for _, se := range h.Maps {
+			for _, e := range se.Endpoints {
+				endpoints[e] = struct{}{}
+			}
+		}
+	*/
+
+	endpoints := []*Endpoint{}
 	for _, se := range h.Maps {
 		for _, e := range se.Endpoints {
-			endpoints[e] = struct{}{}
+			endpoints = append(endpoints, e)
 		}
 	}
 
@@ -105,27 +115,40 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 			return errors.New("Dogmas: " + payload.Message)
 		}
 
+		/*
+			for _, r := range result.Endpoints {
+				for e := range endpoints {
+					if e.Method == r.Method &&
+						e.SrcApp == r.SrcApp &&
+						e.AppFeature == r.AppFeature &&
+						e.AppPath == r.AppPath {
+						e.EndpointId = r.EndpointId
+						e.Activated = r.Activated
+						e.FullProxied = r.FullProxied
+						e.DstApp = r.DstApp
+						//delete(endpoints, e)
+					}
+				}
+			}
+		*/
+
 		for _, r := range result.Endpoints {
-			for e := range endpoints {
-				count++
-				if e.Method == r.Method &&
-					e.SrcApp == r.SrcApp &&
-					e.AppFeature == r.AppFeature &&
-					e.AppPath == r.AppPath {
-					match++
+			for _, e := range endpoints {
+				count += 1
+				if e.Method == r.Method && e.SrcApp == r.SrcApp && e.AppFeature == r.AppFeature && e.AppPath == r.AppPath {
+					match += 1
 					e.EndpointId = r.EndpointId
 					e.Activated = r.Activated
 					e.FullProxied = r.FullProxied
 					e.DstApp = r.DstApp
-					//delete(endpoints, e)
 				}
 			}
 		}
 
+		log.Println("Count from feature: ", count, match)
+
 		next = result.Paging.Next
 	}
-
-	fmt.Println("Count :", count, match)
 
 	return nil
 }
