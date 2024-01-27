@@ -85,7 +85,7 @@ func getDogmasUrl(appRootUrl, dogmasRootUrl *url.URL, nextUrlStr *string) string
 	dogmasUrl.RawQuery = nextUrl.RawQuery
 
 	q := dogmasUrl.Query()
-	q.Set("host", appRootUrl.String())
+	q.Set("app", appRootUrl.String())
 	dogmasUrl.RawQuery = q.Encode()
 
 	return dogmasUrl.String()
