@@ -87,13 +87,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 	}
 
 	/*
-		q := u.Query()
-		q.Set("host", appRootUrl.String())
-		u.RawQuery = q.Encode()
-	*/
-
-	count := 0
-	match := 0
+	 */
 
 	pathString := "/resources/v1/endpoints"
 	next := &pathString
@@ -102,15 +96,21 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		payload := her.NewPayload(result)
 
 		nextUrl, _ := url.Parse(*next)
+		dogmasUrl := h.dogmasRootUrl.JoinPath("")
 
-		u := h.dogmasRootUrl.JoinPath("")
-		u.Path = path.Join(u.Path, nextUrl.Path)
-		u.RawQuery = nextUrl.RawQuery
+		dogmasUrl.Path = path.Join(dogmasUrl.Path, nextUrl.Path)
+		dogmasUrl.RawQuery = nextUrl.RawQuery
+
+		/*
+			q := dogmasUrl.Query()
+			q.Set("host", appRootUrl.String())
+			dogmasUrl.RawQuery = q.Encode()
+		*/
 
 		log.Println("dogmas URL : ", h.dogmasRootUrl.String())
-		log.Println("URL : ", u.String())
+		log.Println("URL : ", dogmasUrl.String())
 
-		if resp, err := http.Get(u.String()); err != nil {
+		if resp, err := http.Get(dogmasUrl.String()); err != nil {
 			return err
 		} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
 			return err
