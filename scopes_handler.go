@@ -94,20 +94,24 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		}
 	}
 
-	u := h.dogmasRootUrl.JoinPath("/resources/v1/endpoints")
-	q := u.Query()
-	q.Set("host", appRootUrl.String())
-	u.RawQuery = q.Encode()
+	/*
+		q := u.Query()
+		q.Set("host", appRootUrl.String())
+		u.RawQuery = q.Encode()
+	*/
 
 	count := 0
 	match := 0
 
-	urlstring := u.String()
-	next := &urlstring
+	pathString := "/resources/v1/endpoints"
+	next := &pathString
 	for next != nil {
 		result := new(resultSyncEndpoints)
 		payload := her.NewPayload(result)
-		if resp, err := http.Get(*next); err != nil {
+
+		u := h.dogmasRootUrl.JoinPath(*next)
+
+		if resp, err := http.Get(u.String()); err != nil {
 			return err
 		} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
 			return err
