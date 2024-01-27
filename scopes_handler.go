@@ -111,10 +111,12 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		payload := her.NewPayload(result)
 
 		nextUrl, _ := url.Parse(*next)
-		u := h.dogmasRootUrl
+
+		u := h.dogmasRootUrl.JoinPath("")
 		u.Path = path.Join(u.Path, nextUrl.Path)
 		u.RawQuery = nextUrl.RawQuery
 
+		log.Println("dogmas URL : ", h.dogmasRootUrl.String())
 		log.Println("URL : ", u.String())
 
 		if resp, err := http.Get(u.String()); err != nil {
