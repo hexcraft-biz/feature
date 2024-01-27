@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 
 	paging "github.com/hexcraft-biz/envmod-mysql"
 	"github.com/hexcraft-biz/her"
@@ -110,7 +111,8 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		payload := her.NewPayload(result)
 
 		nextUrl, _ := url.Parse(*next)
-		u := h.dogmasRootUrl.JoinPath(nextUrl.Path)
+		u := h.dogmasRootUrl
+		u.Path = path.Join(u.Path, nextUrl.Path)
 		u.RawQuery = nextUrl.RawQuery
 
 		log.Println("URL : ", u.String())
