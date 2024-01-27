@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -78,6 +77,20 @@ func (h ScopesHandler) register() error {
 	return nil
 }
 
+func getDogmasUrl(appRootUrl, dogmasRootUrl *url.URL, nextUrlStr *string) string {
+	nextUrl, _ := url.Parse(*nextUrlStr)
+	dogmasUrl := dogmasRootUrl.JoinPath("")
+
+	dogmasUrl.Path = path.Join(dogmasUrl.Path, nextUrl.Path)
+	dogmasUrl.RawQuery = nextUrl.RawQuery
+
+	q := dogmasUrl.Query()
+	q.Set("host", appRootUrl.String())
+	dogmasUrl.RawQuery = q.Encode()
+
+	return dogmasUrl.String()
+}
+
 func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 	endpoints := map[*Endpoint]struct{}{}
 	for _, se := range h.Maps {
@@ -86,31 +99,13 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 		}
 	}
 
-	/*
-	 */
-
 	pathString := "/resources/v1/endpoints"
-	next := &pathString
-	for next != nil {
+	nextUrlStr := &pathString
+	for nextUrlStr != nil {
 		result := new(resultSyncEndpoints)
 		payload := her.NewPayload(result)
 
-		nextUrl, _ := url.Parse(*next)
-		dogmasUrl := h.dogmasRootUrl.JoinPath("")
-
-		dogmasUrl.Path = path.Join(dogmasUrl.Path, nextUrl.Path)
-		dogmasUrl.RawQuery = nextUrl.RawQuery
-
-		/*
-			q := dogmasUrl.Query()
-			q.Set("host", appRootUrl.String())
-			dogmasUrl.RawQuery = q.Encode()
-		*/
-
-		log.Println("dogmas URL : ", h.dogmasRootUrl.String())
-		log.Println("URL : ", dogmasUrl.String())
-
-		if resp, err := http.Get(dogmasUrl.String()); err != nil {
+		if resp, err := http.Get(getDogmasUrl(appRootUrl, h.dogmasRootUrl, nextUrlStr)); err != nil {
 			return err
 		} else if err := her.FetchHexcApiResult(resp, payload); err != nil {
 			return err
@@ -133,7 +128,7 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 			}
 		}
 
-		next = result.Paging.Next
+		nextUrlStr = result.Paging.Next
 	}
 
 	return nil
