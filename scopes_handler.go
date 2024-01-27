@@ -79,19 +79,10 @@ func (h ScopesHandler) register() error {
 }
 
 func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
-	/*
-		endpoints := map[*Endpoint]struct{}{}
-		for _, se := range h.Maps {
-			for _, e := range se.Endpoints {
-				endpoints[e] = struct{}{}
-			}
-		}
-	*/
-
-	endpoints := []*Endpoint{}
+	endpoints := map[*Endpoint]struct{}{}
 	for _, se := range h.Maps {
 		for _, e := range se.Endpoints {
-			endpoints = append(endpoints, e)
+			endpoints[e] = struct{}{}
 		}
 	}
 
@@ -127,40 +118,20 @@ func (h *ScopesHandler) SyncEndpoints(appRootUrl *url.URL) error {
 			return errors.New("Dogmas: " + payload.Message)
 		}
 
-		/*
-			for _, r := range result.Endpoints {
-				for e := range endpoints {
-					if e.Method == r.Method &&
-						e.SrcApp == r.SrcApp &&
-						e.AppFeature == r.AppFeature &&
-						e.AppPath == r.AppPath {
-						e.EndpointId = r.EndpointId
-						e.Activated = r.Activated
-						e.FullProxied = r.FullProxied
-						e.DstApp = r.DstApp
-						//delete(endpoints, e)
-					}
-				}
-			}
-		*/
-
 		for _, r := range result.Endpoints {
-			count += 1
-			log.Println("List endpoint: ", r.Method, r.SrcApp, r.AppFeature, r.AppPath)
-
-			for _, e := range endpoints {
-				if e.Method == r.Method && e.SrcApp == r.SrcApp && e.AppFeature == r.AppFeature && e.AppPath == r.AppPath {
-					match += 1
+			for e := range endpoints {
+				if e.Method == r.Method &&
+					e.SrcApp == r.SrcApp &&
+					e.AppFeature == r.AppFeature &&
+					e.AppPath == r.AppPath {
 					e.EndpointId = r.EndpointId
 					e.Activated = r.Activated
 					e.FullProxied = r.FullProxied
 					e.DstApp = r.DstApp
+					delete(endpoints, e)
 				}
 			}
 		}
-
-		log.Println("Count from feature: ", count, match)
-		log.Println("Next Log: ", (*result.Paging.Next))
 
 		next = result.Paging.Next
 	}
